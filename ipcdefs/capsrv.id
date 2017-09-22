@@ -1,0 +1,7 @@
+interface nn::capsrv::sf::IAlbumControlService is caps:c {
+	
+}
+
+interface nn::capsrv::sf::IAlbumAccessorService is caps:a {
+	
+}

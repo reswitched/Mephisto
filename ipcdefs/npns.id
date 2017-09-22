@@ -1,0 +1,8 @@
+interface nn::npns::Weird {
+	
+}
+interface nn::npns::INpnsSystem is npns:s {
+	[5] SetInterfaceVersion() -> KObject;
+	[7] Unknown7() -> KObject;
+	[103] Unknown103() -> KObject;
+}
