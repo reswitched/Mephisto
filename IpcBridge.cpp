@@ -182,10 +182,10 @@ void IpcBridge::run() {
 			msg.pid = readint();
 			msg.copiedHandles = readarray([this] { return (ghandle) readint(); });
 			msg.movedHandles = readarray([this] { return (ghandle) readint(); });
-			msg.a = readarray([this] { return tuple{readdata(), (int) readint()}; });
-			msg.b = readarray([this] { return tuple{readdata(), (int) readint()}; });
+			msg.a = readarray([this] { return make_tuple(readdata(), (int) readint()); });
+			msg.b = readarray([this] { return make_tuple(readdata(), (int) readint()); });
 			msg.c = readarray([this] { return readdata(); });
-			msg.x = readarray([this] { return tuple{readdata(), (int) readint()}; });
+			msg.x = readarray([this] { return make_tuple(readdata(), (int) readint()); });
 			auto hnd = (ghandle) readint();
 
 			auto packed = msg.pack();
