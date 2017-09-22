@@ -8,6 +8,7 @@ ReSwitched unicorn fork:
 
 ```
 git clone git@github.com:reswitched/unicorn.git
+cd unicorn
 UNICORN_ARCHS="aarch64" ./make.sh
 sudo ./make.sh install
 ```
@@ -15,7 +16,7 @@ sudo ./make.sh install
 Python packages:
 
 ```
-pip -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Ubuntu
