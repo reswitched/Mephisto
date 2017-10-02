@@ -85,7 +85,7 @@ uint8_t nibbleToHex(uint8_t n) {
 	if(n < 0xA)
 		return '0' + n;
 	else
-		return 'A' + n - 0xA;
+		return 'a' + n - 0xA;
 }
 
 uint64_t hexToInt(const uint8_t* src, size_t len) {
@@ -289,6 +289,7 @@ void GdbStub::sendPacket(const char packet) {
 }
 
 void GdbStub::sendReply(const char* reply) {
+	LOG_DEBUG(GdbStub, "Reply: %s", reply);
 	memset(commandBuffer, 0, sizeof(commandBuffer));
 
 	commandLength = static_cast<uint32_t>(strlen(reply));
@@ -357,8 +358,12 @@ auto stringFromFormat(const char* format, ...) {
 void GdbStub::sendSignal(uint32_t signal) {
 	latestSignal = signal;
 
-	string buffer = stringFromFormat("T%02x%02x:%016lx;%02x:%016lx;", latestSignal, 32,
-						bswap_64(reg(32)), 31, bswap_64(reg(31)));
+	uint8_t sp[16];
+	uint8_t pc[16];
+	intToGdbHex(sp, reg(31));
+	intToGdbHex(pc, reg(32));
+
+	string buffer = stringFromFormat("T%02x%02x:%.16s;%02x:%.16s;", latestSignal, 32, pc, 31, sp);
 	LOG_DEBUG(GdbStub, "Response: %s", buffer.c_str());
 	sendReply(buffer.c_str());
 }
@@ -442,7 +447,7 @@ void GdbStub::readRegister() {
 }
 
 void GdbStub::readRegisters() {
-	uint8_t buffer[GDB_BUFFER_SIZE - 4];
+	uint8_t buffer[GDB_BUFFER_SIZE - 4 + 1];
 	memset(buffer, 0, sizeof(buffer));
 
 	uint8_t* bufptr = buffer;
@@ -453,6 +458,7 @@ void GdbStub::readRegisters() {
 	bufptr += (33 * 16);
 
 	memset(bufptr, '0', 8);
+	bufptr[8] = '\0';
 
 	sendReply(reinterpret_cast<char*>(buffer));
 }

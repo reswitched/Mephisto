@@ -105,15 +105,17 @@ void ThreadManager::start() {
 			if(ctu->gdbStub.haltLoop && !ctu->gdbStub.stepLoop)
 				continue;
 			auto wasStep = ctu->gdbStub.stepLoop;
-			ctu->gdbStub.haltLoop = ctu->gdbStub.stepLoop = false;
 			if(_current == nullptr) {
+				ctu->gdbStub.haltLoop = false;
 				next();
+				ctu->gdbStub.haltLoop = ctu->gdbStub.haltLoop || wasStep;
 				continue;
 			}
-			ctu->cpu.exec(ctu->gdbStub.stepLoop ? 1 : INSN_PER_SLICE);
+			ctu->cpu.exec(wasStep ? 1 : INSN_PER_SLICE);
 			if(wasStep) {
-				ctu->gdbStub._break();
 				ctu->gdbStub.haltLoop = ctu->gdbStub.stepLoop = false;
+				_current->freeze();
+				ctu->gdbStub._break();
 			}
 		} else {
 			next();
