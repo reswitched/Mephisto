@@ -21,3 +21,11 @@ public:
 
 	guint load(Ctu &ctu, gptr base, bool relocate=false) override;
 };
+
+class Nro : Nxo {
+public:
+	Nro(string fn) : Nxo(fn) {}
+	virtual ~Nro() override {}
+
+	guint load(Ctu &ctu, gptr base, bool reloacte=false) override;
+};

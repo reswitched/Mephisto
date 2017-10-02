@@ -38,7 +38,7 @@ struct Arg: public option::Arg
   }
 };
 
-enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO };
+enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO };
 const option::Descriptor usage[] =
 {
 	{UNKNOWN, 0, "", "",Arg::None, "USAGE: ctu [options] <load-directory>\n\n"
@@ -46,7 +46,8 @@ const option::Descriptor usage[] =
 	{HELP, 0,"","help",Arg::None, "  --help  \tUnsurprisingly, print this message." },
 	{ENABLE_GDB, 0,"g","enable-gdb",Arg::None, "  --enable-gdb, -g  \tEnable GDB stub." },
 	{PORT, 0,"p","gdb-port",Arg::Numeric, "  --gdb-port, -p  \tSet port for GDB; default 24689." },
-	{NSO, 0,"","load-nso",Arg::NonEmpty, "  --load-nso  \tLoad an NSO without load directory"}, 
+	{NSO, 0,"","load-nso",Arg::NonEmpty, "  --load-nso  \tLoad an NSO without load directory"},
+	{NRO, 0,"","load-nro",Arg::NonEmpty, "  --load-nro  \tLoad an NRO without load directory (entry point .text+0x80)"},
 	{0,0,nullptr,nullptr,nullptr,nullptr}
 };
 
@@ -58,6 +59,15 @@ bool exists(string fn) {
 void loadNso(Ctu &ctu, const string &lfn, gptr raddr) {
 	assert(exists(lfn));
 	Nso file(lfn);
+	file.load(ctu, raddr, false);
+	ctu.loadbase = min(raddr, ctu.loadbase);
+	auto top = raddr + 0x100000000;
+	ctu.loadsize = max(top - ctu.loadbase, ctu.loadsize);
+}
+
+void loadNro(Ctu &ctu, const string &lfn, gptr raddr) {
+	assert(exists(lfn));
+	Nro file(lfn);
 	file.load(ctu, raddr, false);
 	ctu.loadbase = min(raddr, ctu.loadbase);
 	auto top = raddr + 0x100000000;
@@ -91,11 +101,25 @@ int main(int argc, char **argv) {
 	vector<option::Option> buffer(stats.buffer_max);
 	option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
-	if(parse.error())
+	if(parse.error()) {
 		return 1;
-	else if(options[HELP].count() || options[UNKNOWN].count() || (options[NSO].count() == 0 && parse.nonOptionsCount() != 1) || (options[NSO].count() == 1 && parse.nonOptionsCount() != 0)) {
-		option::printUsage(cout, usage);
-		return 0;
+	} else {
+		if(options[HELP].count() || options[UNKNOWN].count()) {
+		  printUsage:
+			option::printUsage(cout, usage);
+			return 0;
+		}
+		if(options[NSO].count() > 0) {
+			if(options[NSO].count() != 1) { goto printUsage; }
+			if(options[NRO].count() != 0) { goto printUsage; }
+			if(parse.nonOptionsCount() != 0) { goto printUsage; }
+		} else if(options[NRO].count() > 0) {
+			if(options[NRO].count() != 1) { goto printUsage; }
+			if(options[NSO].count() != 0) { goto printUsage; }
+			if(parse.nonOptionsCount() != 0) { goto printUsage; }
+		} else {
+			if(parse.nonOptionsCount() != 1) { goto printUsage; }
+		}
 	}
 
 	Ctu ctu;
@@ -110,6 +134,9 @@ int main(int argc, char **argv) {
 	if(options[NSO].count()) {
 		loadNso(ctu, options[NSO][0].arg, 0x7100000000);
 		ctu.execProgram(0x7100000000);
+	} else if(options[NRO].count()) {
+		loadNro(ctu, options[NRO][0].arg, 0x7100000000);
+		ctu.execProgram(0x7100000080);
 	} else {
 		string dir = parse.nonOption(0);
 		auto lfn = dir + "/load.meph";

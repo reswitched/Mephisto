@@ -52,3 +52,30 @@ guint Nso::load(Ctu &ctu, gptr base, bool relocate) {
 
 	return tsize;
 }
+
+typedef struct {
+	uint32_t unk0, moduleHeaderOff, unk2, unk3;
+	uint32_t magic, unk5, fileSize, unk7;
+	uint32_t textOff, textSize, roOff, roSize;
+	uint32_t dataOff, dataSize, bssSize, unk15;
+	uint8_t restOfTheHeader[0x80]; // bunch of hashes and stuff
+} NroHeader;
+
+guint Nro::load(Ctu &ctu, gptr base, bool relocate) {
+	NroHeader hdr;
+	fp.read((char *) &hdr, sizeof(NroHeader));
+	if(hdr.magic != FOURCC('N', 'R', 'O', '0')) {
+		return 0;
+	}
+
+	gptr tsize = hdr.fileSize + hdr.bssSize;
+	ctu.cpu.map(base, tsize);
+
+	char *image = new char[hdr.fileSize];
+	fp.seekg(0);
+	fp.read(image, hdr.fileSize);
+	ctu.cpu.writemem(base, image, hdr.fileSize);
+	delete[] image;
+
+	return tsize;
+}
