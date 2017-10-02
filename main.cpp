@@ -68,7 +68,7 @@ void loadNso(Ctu &ctu, const string &lfn, gptr raddr) {
 void loadNro(Ctu &ctu, const string &lfn, gptr raddr) {
 	assert(exists(lfn));
 	Nro file(lfn);
-	file.load(ctu, raddr, false);
+	file.load(ctu, raddr, true);
 	ctu.loadbase = min(raddr, ctu.loadbase);
 	auto top = raddr + 0x100000000;
 	ctu.loadsize = max(top - ctu.loadbase, ctu.loadsize);
