@@ -134,7 +134,7 @@ void OutgoingIpcMessage::initialize(uint _moveCount, uint _copyCount, uint dataB
 	realDataOffset = isDomainObject ? moveCount << 2 : 0;
 	auto dataWords = (realDataOffset >> 2) + (dataBytes & 3) ? (dataBytes >> 2) + 1 : (dataBytes >> 2);
 
-	buf[1] |= pos - start + 4 + dataWords;
+	buf[1] |= 4 + (isDomainObject ? 4 : 0) + 4 + dataWords;
 
 	sfcoOffset = pos * 4;
 	buf[pos] = FOURCC('S', 'F', 'C', 'O');
