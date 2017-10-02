@@ -459,11 +459,17 @@ guint Svc::Break(guint X0, guint X1, guint info) {
 }
 
 guint Svc::OutputDebugString(guint ptr, guint size) {
-	LOG_DEBUG(Svc[0x27], "OutputDebugString");
+	//LOG_DEBUG(Svc[0x27], "OutputDebugString addr=" ADDRFMT " size=" LONGFMT, ptr, size);
+	if(size > 0x2000) {
+		LOG_DEBUG(Svc[0x27], "Debug string is bigger than 0x2000 bytes. Something probably went wrong.");
+	}
 	char *debugStr = (char*) malloc(size + 1);
 	memset(debugStr, 0, size+1);
-	ctu->cpu.readmem(ptr, debugStr, size);
-	LOG_DEBUG(Svc[0x27], "Debug String: %s", debugStr);
+	if(ctu->cpu.readmem(ptr, debugStr, size)) {
+		LOG_DEBUG(Svc[0x27], "Debug String: %s", debugStr);
+	} else {
+		LOG_DEBUG(Svc[0x27], "Could not access memory at " ADDRFMT, ptr);
+	}
 	free(debugStr);
 	return 0;
 }
