@@ -254,8 +254,10 @@ guint Svc::MapMemoryBlock(ghandle handle, gptr addr, guint size, guint perm) {
 }
 
 tuple<guint, guint> Svc::CreateTransferMemory(gptr addr, guint size, guint perm) {
-	LOG_DEBUG(Svc[0x15], "CreateTransferMemory 0x" LONGFMT " 0x" LONGFMT " 0x" LONGFMT, addr, size, perm);
-	return make_tuple(0, 0);
+    LOG_DEBUG(Svc[0x15], "CreateTransferMemory 0x" LONGFMT " 0x" LONGFMT " 0x" LONGFMT, addr, size, perm);
+    auto tm = make_shared<MemoryBlock>(size, perm);
+    tm->addr = addr;
+    return make_tuple(0, ctu->newHandle(tm));
 }
 
 guint Svc::CloseHandle(ghandle handle) {

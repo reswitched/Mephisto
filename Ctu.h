@@ -163,6 +163,8 @@ public:
 	guint heapsize;
 	gptr loadbase, loadsize;
 
+	bool socketsEnabled;
+	
 private:
 	ghandle handleId;
 	unordered_map<ghandle, shared_ptr<KObject>> handles;

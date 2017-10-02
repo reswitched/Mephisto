@@ -1,0 +1,33 @@
+interface nn::socket::sf::IClient is bsd:u, bsd:s {
+	[0] Initialize(u64, u64, u64, u64, u64 pid, u64 transferMemorySize, pid, KObject) -> u32 bsd_errno; // tested
+	[1] Unknown1(u64, pid);
+	[2] socket(u32 domain, u32 type, u32 protocol) -> (i32 ret, u32 bsd_errno); // tested
+	[3] Unknown3(u32, u32, u32) -> (u32, u32);
+	[4] Unknown4(u32, buffer<unknown, 0x21, 0>) -> (u32, u32);
+	[5] Unknown5(u32, bytes<0x18>, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>) -> (u32, u32, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>);
+	[6] Unknown6(u32, u32, buffer<unknown, 0x21, 0>) -> (u32, u32, buffer<unknown, 0x22, 0>);
+	[7] Unknown7(buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>) -> (u32, u32, u32, buffer<unknown, 0x22, 0>);
+	[8] recv(u32 socket, u32 flags) -> (i32 ret, u32 bsd_errno, buffer<i8, 0x22, 0>); // untested
+	[9] Unknown9(u32, u32) -> (u32, u32, u32, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>);
+	[10] send(u32 socket, u32 flags, buffer<i8, 0x21, 0>) -> (i32 ret, u32 bsd_errno); // tested
+	[11] sendto(u32 socket, u32 flags, buffer<i8, 0x21, 0>, buffer<sockaddr, 0x21, 0>) -> (i32 ret, u32 bsd_errno); // untested
+	[12] accept(u32 socket) -> (u32, u32, u32, buffer<sockaddr, 0x22, 0>); // untested
+	[13] bind(u32 socket, buffer<sockaddr, 0x21, 0>) -> (i32 ret, u32 bsd_errno); // untested
+	[14] connect(u32 socket, buffer<sockaddr, 0x21, 0>) -> (i32 ret, u32 bsd_errno); // tested
+	[15] Unknown15(u32) -> (u32, u32, u32, buffer<unknown, 0x22, 0>);
+	[16] getsockname(u32 socket) -> (u32, u32, u32, buffer<sockaddr, 0x22, 0>); // untested
+	[17] Unknown17(u32, u32, u32) -> (u32, u32, u32, buffer<unknown, 0x22, 0>);
+	[18] listen(u32 socket, u32 backlog) -> (i32 ret, u32 bsd_errno); // untested
+	[19] Unknown19(u32, u32, u32, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>) -> (u32, u32, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>, buffer<unknown, 0x22, 0>);
+	[20] Unknown20(u32, u32, u32) -> (u32, u32);
+	[21] setsockopt(u32 socket, u32 level, u32 option_name, buffer<unknown, 0x21, 0>) -> (i32 ret, u32 bsd_errno); // untested
+	[22] shutdown(u32 socket, u32 how) -> (i32 ret, u32 bsd_errno); // untested
+	[23] Unknown23(u32) -> (u32, u32);
+	[24] Unknown24(u32, buffer<unknown, 0x21, 0>) -> (u32, u32);
+	[25] Unknown25(u32) -> (u32, u32, buffer<unknown, 0x22, 0>);
+	[26] bsd_close(u32 socket) -> (i32 ret, u32 bsd_errno); // untested
+	[27] Unknown27(u32, u64) -> (u32, u32);
+	[28] Unknown28(u64, pid) -> (u32, u32, buffer<unknown, 0x22, 0>);
+	[29] Unknown29(u32, u32, u32, u128) -> (u32, u32, buffer<unknown, 0x22, 0>);
+	[30] Unknown30(u32, u32, u32, buffer<unknown, 0x21, 0>, buffer<unknown, 0x21, 0>) -> (u32, u32);
+}

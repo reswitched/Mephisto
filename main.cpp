@@ -38,7 +38,7 @@ struct Arg: public option::Arg
   }
 };
 
-enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO };
+enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, ENABLE_SOCKETS };
 const option::Descriptor usage[] =
 {
 	{UNKNOWN, 0, "", "",Arg::None, "USAGE: ctu [options] <load-directory>\n\n"
@@ -48,6 +48,7 @@ const option::Descriptor usage[] =
 	{PORT, 0,"p","gdb-port",Arg::Numeric, "  --gdb-port, -p  \tSet port for GDB; default 24689." },
 	{NSO, 0,"","load-nso",Arg::NonEmpty, "  --load-nso  \tLoad an NSO without load directory"},
 	{NRO, 0,"","load-nro",Arg::NonEmpty, "  --load-nro  \tLoad an NRO without load directory (entry point .text+0x80)"},
+	{ENABLE_SOCKETS, 0, "b","enable-sockets",Arg::None, "  -- enable-sockets, -b  \tEnable BSD socket passthrough." },
 	{0,0,nullptr,nullptr,nullptr,nullptr}
 };
 
@@ -131,6 +132,12 @@ int main(int argc, char **argv) {
 	} else
 		assert(options[PORT].count() == 0);
 
+	if(options[ENABLE_SOCKETS].count()) {
+		ctu.socketsEnabled = true;
+	} else {
+		ctu.socketsEnabled = false;
+	}
+	
 	if(options[NSO].count()) {
 		loadNso(ctu, options[NSO][0].arg, 0x7100000000);
 		ctu.execProgram(0x7100000000);
