@@ -1,5 +1,5 @@
 CC := clang++-5.0
-PYTHON2 := python
+PYTHON2 := python2
 CPP_FILES := $(wildcard *.cpp)
 IPCIMPL_FILES := $(wildcard ipcimpl/*.cpp)
 H_FILES := $(wildcard *.h)
