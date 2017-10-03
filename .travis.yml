@@ -1,0 +1,23 @@
+dist: trusty
+sudo: required
+language: c++
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-5.0
+    packages:
+      - clang-5.0
+      - llvm-5.0
+      - llvm-5.0-dev
+      - lld-5.0
+      - liblz4-dev
+install:
+  - sudo pip2 install -r requirements.txt
+  - git clone https://github.com/reswitched/unicorn.git
+  - cd unicorn
+  - UNICORN_ARCHS="aarch64" ./make.sh
+  - sudo ./make.sh install
+  - cd ..
+script:  make LD=ld.lld-5.0
