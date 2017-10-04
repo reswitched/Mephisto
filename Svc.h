@@ -27,7 +27,7 @@ private:
 	guint MirrorStack(gptr dest, gptr src, guint size); // 0x04
 	guint UnmapMemory(gptr dest, gptr src, guint size); // 0x05
 	tuple<guint, guint> QueryMemory(gptr meminfo, gptr pageinfo, gptr addr); // 0x06
-	void ExitProcess(); // 0x07
+	void ExitProcess(guint exitCode); // 0x07
 	tuple<guint, guint> CreateThread(guint pc, guint x0, guint sp, guint prio, guint proc); // 0x08
 	guint StartThread(ghandle handle); // 0x09
 	void ExitThread(); // 0x0A

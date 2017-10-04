@@ -70,7 +70,7 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc_ret_X0(       0x04, MirrorStack, IX0, IX1, IX2);
 	registerSvc_ret_X0(       0x05, UnmapMemory, IX0, IX1, IX2);
 	registerSvc_ret_X0_X1(    0x06, QueryMemory, IX0, IX1, IX2);
-	registerSvc(              0x07, ExitProcess);
+	registerSvc(              0x07, ExitProcess, IX0);
 	registerSvc_ret_X0_X1(    0x08, CreateThread, IX1, IX2, IX3, IX4, IX5);
 	registerSvc_ret_X0(       0x09, StartThread, (ghandle) IX0);
 	registerSvc(              0x0A, ExitThread);
@@ -179,9 +179,12 @@ tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
 	return make_tuple(0, 0);
 }
 
-void Svc::ExitProcess() {
+// the nintendo svc probably doesn't take an exitCode,
+// but this makes it easier to return values from
+// libtransistor tests.
+void Svc::ExitProcess(guint exitCode) {
 	LOG_DEBUG(Svc[0x07], "ExitProcess");
-	exit(0);
+	exit((int) exitCode);
 }
 
 tuple<guint, guint> Svc::CreateThread(guint pc, guint x0, guint sp, guint prio, guint proc) {

@@ -44,7 +44,7 @@ Cpu::Cpu(Ctu *_ctu) : ctu(_ctu) {
 	CHECKED(uc_open(UC_ARCH_ARM64, UC_MODE_ARM, &uc));
 
 	CHECKED(uc_mem_map(uc, TERMADDR, 0x1000, UC_PROT_ALL));
-	guestptr<uint32_t>(TERMADDR) = 0xd503201f; // nop
+	guestptr<uint32_t>(TERMADDR) = 0xd40000e1; // svc 0x7 (ExitProcess)
 
 	auto fpv = 3 << 20;
 	CHECKED(uc_reg_write(uc, UC_ARM64_REG_CPACR_EL1, &fpv));
