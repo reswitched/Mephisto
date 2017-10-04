@@ -115,6 +115,15 @@ uint32_t nn::socket::sf::IClient::send(IN uint32_t socket, IN uint32_t flags, IN
 }
 uint32_t nn::socket::sf::IClient::sendto(IN uint32_t socket, IN uint32_t flags, IN int8_t * _2, guint _2_size, IN sockaddr * _3, guint _3_size, OUT int32_t& ret, OUT uint32_t& bsd_errno) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::socket::sf::IClient::sendto");
+	if(passthrough) {
+		struct sockaddr *addr = (struct sockaddr *) _3;
+		addr->sa_family = ntohs(addr->sa_family);
+		ret = (uint32_t) ::sendto(socket, _2, (size_t) _2_size, flags, (struct sockaddr *) addr, (socklen_t) _3_size);
+		bsd_errno = errno;
+	} else {
+		ret = 0;
+		bsd_errno = 0;
+	}
 	return 0;
 }
 uint32_t nn::socket::sf::IClient::setsockopt(IN uint32_t socket, IN uint32_t level, IN uint32_t option_name, IN uint8_t * _3, guint _3_size, OUT int32_t& ret, OUT uint32_t& bsd_errno) {
@@ -123,6 +132,12 @@ uint32_t nn::socket::sf::IClient::setsockopt(IN uint32_t socket, IN uint32_t lev
 }
 uint32_t nn::socket::sf::IClient::shutdown(IN uint32_t socket, IN uint32_t how, OUT int32_t& ret, OUT uint32_t& bsd_errno) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::socket::sf::IClient::shutdown");
+	if(passthrough) {
+		ret = ::shutdown(socket, how);
+	} else {
+		ret = 0;
+		bsd_errno = 0;
+	}
 	return 0;
 }
 uint32_t nn::socket::sf::IClient::socket(IN uint32_t domain, IN uint32_t type, IN uint32_t protocol, OUT int32_t& ret, OUT uint32_t& bsd_errno) {
