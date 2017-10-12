@@ -107,7 +107,6 @@ guint Nro::load(Ctu &ctu, gptr base, bool relocate) {
 		bool foundRela = false;
 		
 		while(dynamic->d_tag > 0) {
-			LOG_DEBUG(TLD, "found d_tag %lx", dynamic->d_tag);
 			switch(dynamic->d_tag) {
 			case 7: // DT_RELA
 				if(foundRela) {
@@ -146,11 +145,7 @@ guint Nro::load(Ctu &ctu, gptr base, bool relocate) {
 		Elf64_Rela *relaBase = (Elf64_Rela*) (image + relaOffset);
 		for(int i = 0; i < relaCount; i++) {
 			Elf64_Rela rela = relaBase[i];
-			LOG_DEBUG(TLD, "r_offset: %lx", rela.r_offset);
-			LOG_DEBUG(TLD, "r_reloc_type: %x", rela.r_reloc_type);
-			LOG_DEBUG(TLD, "r_symbol: %x", rela.r_symbol);
-			LOG_DEBUG(TLD, "r_addend: %lx", rela.r_addend);
-
+			
 			switch(rela.r_reloc_type) {
 			case 0x403: // R_AARCH64_RELATIVE
 				if(rela.r_symbol != 0) {
