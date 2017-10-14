@@ -171,7 +171,7 @@ static bool pack_addrinfo(const struct addrinfo *ai, uint8_t *buf, int size) {
 		uint32_t ai_socktype;
 		uint32_t ai_protocol;
 		uint32_t ai_addrlen;
-	}  __attribute__((packed)) ai_packed_header = {
+	} ai_packed_header = {
 		htonl(0xBEEFCAFE),
 		htonl(ai->ai_flags),
 		htonl(ai->ai_family),
@@ -246,7 +246,7 @@ static bool unpack_addrinfo(struct addrinfo **res, const uint8_t *buf, int size)
 		int32_t ai_socktype;
 		int32_t ai_protocol;
 		int32_t ai_addrlen;
-	} __attribute__((packed)) ai_packed_header;
+	} ai_packed_header;
 
 	static_assert(sizeof(ai_packed_header) == 6*4, "ai_packed_header size is wrong");
 	
