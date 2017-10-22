@@ -1,6 +1,5 @@
 #pragma once
 
-#include <byteswap.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <string.h>
@@ -52,10 +51,10 @@ const gptr TERMADDR = 1ULL << 61;
 #define LONGFMT "%lx"
 
 enum LogLevel {
-	None = 0, 
-	Error = 1, 
-	Warn = 2, 
-	Debug = 3, 
+	None = 0,
+	Error = 1,
+	Warn = 2,
+	Debug = 3,
 	Info = 4
 };
 
@@ -164,7 +163,7 @@ public:
 	gptr loadbase, loadsize;
 
 	bool socketsEnabled;
-	
+
 private:
 	ghandle handleId;
 	unordered_map<ghandle, shared_ptr<KObject>> handles;
