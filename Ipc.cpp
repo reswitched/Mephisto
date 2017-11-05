@@ -129,8 +129,10 @@ void OutgoingIpcMessage::initialize(uint _moveCount, uint _copyCount, uint dataB
 	auto start = pos;
 	if(pos & 3)
 		pos += 4 - (pos & 3);
-	if(isDomainObject)
+	if(isDomainObject) {
+		buf[pos] = moveCount;
 		pos += 4;
+	}
 	realDataOffset = isDomainObject ? moveCount << 2 : 0;
 	auto dataWords = (realDataOffset >> 2) + (dataBytes & 3) ? (dataBytes >> 2) + 1 : (dataBytes >> 2);
 
