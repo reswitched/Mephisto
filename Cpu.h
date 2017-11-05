@@ -46,13 +46,16 @@ public:
 	void registerSvcHandler(int num, std::function<void(Cpu *)> handler);
 
 	hook_t addCodeBreakpoint(gptr addr);
-	void removeCodeBreakpoint(hook_t hook);
+	hook_t addMemoryBreakpoint(gptr addr, guint len, BreakpointType type);
+	void removeBreakpoint(hook_t hook);
 
 	void interruptHook(uint32_t intNo);
 	bool unmappedHook(uc_mem_type type, gptr addr, int size, guint value);
 
 	void setMmio(Mmio *_mmioHandler);// { mmioHandler = _mmioHandler; }
 	Mmio *mmioHandler;
+
+	bool hitMemBreakpoint;
 
 private:
 	Ctu *ctu;
@@ -82,6 +85,10 @@ public:
 	}
 
 	const T &operator[](int i) {
+		return *Guest<T>(cpu, addr + i * sizeof(T));
+	}
+
+	const T &operator[](unsigned int i) {
 		return *Guest<T>(cpu, addr + i * sizeof(T));
 	}
 

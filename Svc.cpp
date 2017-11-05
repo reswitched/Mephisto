@@ -64,6 +64,8 @@
 	}); \
 } while(0)
 
+#define UNIMPLEMENTED(svc) do { LOG_ERROR(Svc[svc], "!Unimplemented!"); } while(0)
+
 Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc_ret_X0_X1(    0x01, SetHeapSize, IX1);
 	registerSvc_ret_X0(       0x03, SetMemoryAttribute, IX0, IX1, IX2, IX3);
@@ -111,9 +113,9 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc_ret_X0_X1(    0x53, CreateInterruptEvent, IX1);
 	registerSvc_ret_X0_X1(    0x55, QueryIoMapping, IX1, IX2);
 	registerSvc_ret_X0_X1(    0x56, CreateDeviceAddressSpace, IX1, IX2);
-	registerSvc_ret_X0_X1(    0x57, AttachDeviceAddressSpace, (ghandle) IX0, IX1, IX2);
-	registerSvc_ret_X0_X1(    0x59, MapDeviceAddressSpaceByForce, (ghandle) IX0, (ghandle) IX1, IX2, IX3, IX4, IX5);
-	registerSvc_ret_X0(       0x5c, UnmapDeviceAddressSpace, IX0, (ghandle) IX1, IX2, IX3);
+	registerSvc_ret_X0(       0x57, AttachDeviceAddressSpace, IX0, (ghandle) IX1);
+	registerSvc_ret_X0(       0x59, MapDeviceAddressSpaceByForce, (ghandle) IX0, (ghandle) IX1, IX2, IX3, IX4, IX5);
+	registerSvc_ret_X0(       0x5c, UnmapDeviceAddressSpace, IX0, (ghandle) IX1, IX2, IX3, IX4);
 	registerSvc_ret_X0(       0x74, MapProcessMemory, IX0, (ghandle) IX1, IX2, IX3);
 	registerSvc_ret_X0(       0x75, UnmapProcessMemory, IX0, (ghandle) IX1, IX2, IX3);
 	registerSvc_ret_X0(       0x77, MapProcessCodeMemory, (ghandle) IX0, IX1, IX2, IX3);
@@ -144,6 +146,7 @@ guint Svc::MirrorStack(gptr dest, gptr src, guint size) {
 
 guint Svc::UnmapMemory(gptr dest, gptr src, guint size) {
 	LOG_DEBUG(Svc[0x05], "UnmapMemory 0x" ADDRFMT " 0x" ADDRFMT " - 0x" LONGFMT, dest, src, size);
+	ctu->cpu.unmap(dest, size);
 	return 0;
 }
 
@@ -238,6 +241,7 @@ guint Svc::GetCurrentProcessorNumber(guint tmp) {
 
 guint Svc::SignalEvent(ghandle handle) {
 	LOG_DEBUG(Svc[0x11], "SignalEvent 0x%x", handle);
+	UNIMPLEMENTED(0x11);
 	return 0;
 }
 
@@ -257,10 +261,10 @@ guint Svc::MapMemoryBlock(ghandle handle, gptr addr, guint size, guint perm) {
 }
 
 tuple<guint, guint> Svc::CreateTransferMemory(gptr addr, guint size, guint perm) {
-    LOG_DEBUG(Svc[0x15], "CreateTransferMemory 0x" LONGFMT " 0x" LONGFMT " 0x" LONGFMT, addr, size, perm);
-    auto tm = make_shared<MemoryBlock>(size, perm);
-    tm->addr = addr;
-    return make_tuple(0, ctu->newHandle(tm));
+	LOG_DEBUG(Svc[0x15], "CreateTransferMemory 0x" LONGFMT " 0x" LONGFMT " 0x" LONGFMT, addr, size, perm);
+	auto tm = make_shared<MemoryBlock>(size, perm);
+	tm->addr = addr;
+	return make_tuple(0, ctu->newHandle(tm));
 }
 
 guint Svc::CloseHandle(ghandle handle) {
@@ -271,6 +275,7 @@ guint Svc::CloseHandle(ghandle handle) {
 
 guint Svc::ResetSignal(ghandle handle) {
 	LOG_DEBUG(Svc[0x17], "ResetSignal 0x%x", handle);
+	UNIMPLEMENTED(0x17);
 	return 0;
 }
 
@@ -310,6 +315,7 @@ tuple<guint, guint> Svc::WaitSynchronization(gptr handles, guint numHandles, gui
 
 guint Svc::CancelSynchronization(ghandle handle) {
 	LOG_DEBUG(Svc[0x19], "CancelSynchronization 0x%x", handle);
+	UNIMPLEMENTED(0x19);
 	return 0;
 }
 
@@ -445,6 +451,7 @@ guint Svc::SendSyncRequest(ghandle handle) {
 
 guint Svc::SendSyncRequestEx(gptr buf, guint size, ghandle handle) {
 	LOG_ERROR(Svc[0x22], "SendSyncRequestEx not implemented");
+	UNIMPLEMENTED(0x22);
 	return 0xf601;
 }
 
@@ -490,7 +497,7 @@ tuple<guint, guint> Svc::GetInfo(guint id1, ghandle handle, guint id2) {
 	matchpair(3, 0, 0x1000000000);
 	matchpair(4, 0, 0xaa0000000);
 	matchpair(5, 0, ctu->heapsize); // Heap region size
-	matchpair(6, 0, 0x100000);
+	matchpair(6, 0, 0x400000);
 	matchpair(7, 0, 0x10000);
 	matchpair(12, 0, 0x8000000);
 	matchpair(13, 0, 0x7ff8000000);
@@ -548,11 +555,11 @@ tuple<guint, guint> Svc::ReplyAndReceive(gptr handles, guint numHandles, ghandle
 
 tuple<guint, guint, guint> Svc::CreateEvent(ghandle clientOut, ghandle serverOut, guint unk) {
 	LOG_DEBUG(Svc[0x45], "CreateEvent");
-	return make_tuple(0, 0, 0);
+	return make_tuple(0, ctu->newHandle(make_shared<Waitable>()), ctu->newHandle(make_shared<Waitable>()));
 }
 
 tuple<guint, guint> Svc::ReadWriteRegister(guint reg, guint rwm, guint val) {
-	LOG_DEBUG(Svc[0x4E], "ReadWriteRegister");
+	LOG_DEBUG(Svc[0x4E], "ReadWriteRegister reg=" ADDRFMT " rwm=" LONGFMT " val=" LONGFMT, reg, rwm, val);
 	return make_tuple(0, 0);
 }
 
@@ -574,13 +581,14 @@ guint Svc::UnmapTransferMemory(ghandle handle, gptr addr, guint size) {
 }
 
 tuple<guint, guint> Svc::CreateInterruptEvent(guint irq) {
-	LOG_DEBUG(Svc[0x53], "CreateInterruptEvent");
-	return make_tuple(0, 0);
+	LOG_DEBUG(Svc[0x53], "CreateInterruptEvent irq=" LONGFMT, irq);
+	return make_tuple(0, ctu->newHandle(make_shared<InstantWaitable>()));
 }
 
 tuple<guint, guint> Svc::QueryIoMapping(gptr physaddr, guint size) {
-	LOG_DEBUG(Svc[0x55], "QueryIoMapping");
+	LOG_DEBUG(Svc[0x55], "QueryIoMapping " ADDRFMT " size " LONGFMT, physaddr, size);
 	gptr addr = ctu->mmiohandler.getVirtualAddressFromAddr(physaddr);
+	LOG_DEBUG(Svc[0x55], ADDRFMT, addr);
 	if(addr == 0x0) { // force exit for now
 		cout << "!Unknown physical address!" << endl;
 		exit(1);
@@ -588,23 +596,36 @@ tuple<guint, guint> Svc::QueryIoMapping(gptr physaddr, guint size) {
 	return make_tuple(0x0, addr);
 }
 
-tuple<guint, guint> Svc::CreateDeviceAddressSpace(guint base, guint size) {
-	LOG_DEBUG(Svc[0x56], "CreateDeviceAddressSpace");
-	return make_tuple(0, 0);
+class DeviceMemory : public KObject {
+public:
+	DeviceMemory(gptr _start, gptr _end) : start(_start), end(_end) {
+	}
+
+	gptr start, end;
+	list<guint> devices;
+};
+
+tuple<guint, guint> Svc::CreateDeviceAddressSpace(gptr start, gptr end) {
+	LOG_DEBUG(Svc[0x56], "CreateDeviceAddressSpace start=" ADDRFMT " end=" ADDRFMT, start, end);
+	auto obj = make_shared<DeviceMemory>(start, end);
+	return make_tuple(0, ctu->newHandle(obj));
 }
 
-tuple<guint, guint> Svc::AttachDeviceAddressSpace(ghandle handle, guint dev, gptr addr) {
-	LOG_DEBUG(Svc[0x57], "AttachDeviceAddressSpace");
-	return make_tuple(0, 0);
+guint Svc::AttachDeviceAddressSpace(guint dev, ghandle handle) {
+	LOG_DEBUG(Svc[0x57], "AttachDeviceAddressSpace dev=" LONGFMT " handle=%x", dev, handle);
+	auto obj = ctu->getHandle<DeviceMemory>(handle);
+	obj->devices.push_back(dev);
+	return 0;
 }
 
-tuple<guint, guint> Svc::MapDeviceAddressSpaceByForce(ghandle handle, ghandle phandle, gptr paddr, guint size, gptr maddr, guint perm) {
-	LOG_DEBUG(Svc[0x59], "MapDeviceAddressSpaceByForce");
-	return make_tuple(0, 0);
+guint Svc::MapDeviceAddressSpaceByForce(ghandle handle, ghandle phandle, gptr vaddr, guint size, gptr saddr, guint perm) {
+	LOG_DEBUG(Svc[0x59], "MapDeviceAddressSpaceByForce handle=%x phandle=%x vaddr=" ADDRFMT " size=" LONGFMT " saddr=" ADDRFMT " perm=" LONGFMT, handle, phandle, vaddr, size, saddr, perm);
+	return 0;
 }
 
-guint Svc::UnmapDeviceAddressSpace(guint unk0, ghandle phandle, gptr maddr, guint size) {
+guint Svc::UnmapDeviceAddressSpace(guint unk0, ghandle phandle, gptr maddr, guint size, gptr paddr) {
 	LOG_DEBUG(Svc[0x5c], "UnmapDeviceAddressSpace");
+	UNIMPLEMENTED(0x5c);
 	return 0;
 }
 

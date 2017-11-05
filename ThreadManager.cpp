@@ -18,6 +18,7 @@ void Thread::assignHandle(uint32_t _handle) {
 }
 
 void Thread::terminate() {
+	signal();
 	ctu->tm.terminate(id);
 }
 
@@ -102,6 +103,12 @@ void ThreadManager::start() {
 	while(true) {
 		if(ctu->gdbStub.enabled) {
 			ctu->gdbStub.handlePacket();
+			if(ctu->gdbStub.remoteBreak) {
+				ctu->gdbStub.remoteBreak = false;
+				if(_current != nullptr)
+					_current->freeze();
+				ctu->gdbStub.sendSignal(SIGTRAP);
+			}
 			if(ctu->gdbStub.haltLoop && !ctu->gdbStub.stepLoop)
 				continue;
 			auto wasStep = ctu->gdbStub.stepLoop;

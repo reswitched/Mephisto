@@ -10,7 +10,7 @@ public:
 	void release();
 
 	void wait(function<int()> cb);
-	void wait(function<int(bool)> cb);
+	virtual void wait(function<int(bool)> cb);
 
 	void signal(bool one=false);
 	void cancel();
@@ -24,6 +24,14 @@ private:
 	recursive_mutex lock;
 	list<function<int(bool)>> waiters;
 	bool presignaled, canceled;
+};
+
+class InstantWaitable : public Waitable {
+public:
+	virtual void wait(function<int(bool)> cb) {
+		Waitable::wait(cb);
+		signal(true);
+	}
 };
 
 class Semaphore : public Waitable {

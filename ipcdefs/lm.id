@@ -3,6 +3,6 @@ interface nn::lm::ILogService is lm {
 }
 
 interface nn::lm::ILogger {
-	[0] Unknown0(buffer<unknown, 0x21, 0>);
+	[0] Log(buffer<u8, 0x21, 0> message);
 	[1] Unknown1(u32);
 }

@@ -11,15 +11,6 @@
 
 #define GDB_BUFFER_SIZE 10000
 
-/// Breakpoint Method
-enum class BreakpointType {
-	None,
-	Execute,
-	Read,
-	Write,
-	Access
-};
-
 struct BreakpointAddress {
 	gptr address;
 	BreakpointType type;
@@ -41,8 +32,9 @@ public:
 	void handlePacket();
 	auto getNextBreakpointFromAddress(gptr addr, BreakpointType type);
 	bool checkBreakpoint(gptr addr, BreakpointType type);
+	void sendSignal(uint32_t signal);
 
-	bool memoryBreak, haltLoop, stepLoop, enabled;
+	bool memoryBreak, haltLoop, stepLoop, remoteBreak, enabled;
 
 private:
 	auto& getBreakpointList(BreakpointType type);
@@ -52,7 +44,6 @@ private:
 	void sendReply(const char* reply);
 	void handleQuery();
 	void handleSetThread();
-	void sendSignal(uint32_t signal);
 	void readCommand();
 	bool isDataAvailable();
 	void readRegister();

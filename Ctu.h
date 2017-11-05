@@ -81,14 +81,56 @@ extern LogLevel g_LogLevel;
 } while(0)
 
 class Ctu;
+class LogMessage;
+
+enum class BreakpointType {
+	None,
+	Execute,
+	Read,
+	Write,
+	Access
+};
+
+typedef struct {
+	float64_t low;
+	float64_t high;
+} float128;
+
+typedef struct {
+	guint SP, PC, NZCV;
+	union {
+		struct {
+			guint gprs[31];
+			float128 fprs[32];
+		};
+		struct {
+			guint  X0,  X1,  X2,  X3, 
+			       X4,  X5,  X6,  X7, 
+			       X8,  X9, X10, X11, 
+			      X12, X13, X14, X15, 
+			      X16, X17, X18, X19, 
+			      X20, X21, X22, X23, 
+			      X24, X25, X26, X27, 
+			      X28, X29, X30;
+			float128   Q0,  Q1,  Q2,  Q3,
+			           Q4,  Q5,  Q6,  Q7, 
+			           Q8,  Q9, Q10, Q11, 
+			          Q12, Q13, Q14, Q15, 
+			          Q16, Q17, Q18, Q19, 
+			          Q20, Q21, Q22, Q23, 
+			          Q24, Q25, Q26, Q27, 
+			          Q28, Q29, Q30, Q31;
+		};
+	};
+} ThreadRegisters;
 
 #include "optionparser.h"
 #include "Lisparser.h"
 #include "KObject.h"
-#include "ThreadManager.h"
 #include "Mmio.h"
 #include "Cpu.h"
 #include "Sync.h"
+#include "ThreadManager.h"
 #include "Svc.h"
 #include "Ipc.h"
 #include "Nxo.h"
@@ -131,6 +173,7 @@ public:
 	ghandle newHandle(shared_ptr<T> obj) {
 		static_assert(std::is_base_of<KObject, T>::value, "T must derive from KObject");
 		auto hnd = handleId++;
+		LOG_DEBUG(Ctu, "Creating handle %x", hnd);
 		handles[hnd] = dynamic_pointer_cast<KObject>(obj);
 		return hnd;
 	}
@@ -148,11 +191,14 @@ public:
 			LOG_ERROR(Ctu, "Got null pointer after cast. Before: 0x%p", (void *) obj.get());
 		return temp;
 	}
+	bool hasHandle(ghandle handle) {
+		return handles.find(handle) != handles.end();
+	}
 	ghandle duplicateHandle(KObject *ptr);
 	void deleteHandle(ghandle handle);
 
-	Mmio mmiohandler;
 	Cpu cpu;
+	Mmio mmiohandler;
 	Svc svc;
 	Ipc ipc;
 	ThreadManager tm;

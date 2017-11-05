@@ -177,6 +177,7 @@ void GdbStub::enable(uint16_t port) {
 
 	enabled = true;
 	haltLoop = true;
+	remoteBreak = false;
 }
 
 uint8_t GdbStub::readByte() {
@@ -244,7 +245,7 @@ void GdbStub::removeBreakpoint(BreakpointType type, gptr addr) {
 	if(bp != p.end()) {
 		LOG_DEBUG(GdbStub, "gdb: removed a breakpoint: %016lx bytes at %016lx of type %d",
 				  bp->second.len, bp->second.addr, type);
-		ctu->cpu.removeCodeBreakpoint(bp->second.hook);
+		ctu->cpu.removeBreakpoint(bp->second.hook);
 		p.erase(addr);
 	}
 }
@@ -379,7 +380,7 @@ void GdbStub::readCommand() {
 	} else if(c == 0x03) {
 		LOG_INFO(GdbStub, "gdb: found break command");
 		haltLoop = true;
-		sendSignal(SIGTRAP);
+		remoteBreak = true;
 		return;
 	} else if(c != GDB_STUB_START) {
 		LOG_DEBUG(GdbStub, "gdb: read invalid byte %02x", c);
@@ -574,6 +575,8 @@ bool GdbStub::commitBreakpoint(BreakpointType type, gptr addr, uint32_t len) {
 
 	if(type == BreakpointType::Execute)
 		breakpoint.hook = ctu->cpu.addCodeBreakpoint(addr);
+	else
+		breakpoint.hook = ctu->cpu.addMemoryBreakpoint(addr, len, type);
 
 	p.insert({addr, breakpoint});
 

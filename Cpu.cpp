@@ -4,27 +4,41 @@ void intrHook(uc_engine *uc, uint32_t intNo, void *user_data) {
 	((Cpu *) user_data)->interruptHook(intNo);
 }
 
-bool unmpdHook(uc_engine *uc, uc_mem_type type, gptr addr, int size, guint value, void *user_data) {
+bool unmpdHook(uc_engine *uc, uc_mem_type type, gptr addr, uint32_t size, guint value, void *user_data) {
 	return ((Cpu *) user_data)->unmappedHook(type, addr, size, value);
 }
 
-void mmioHook(uc_engine *uc, uc_mem_type type, gptr address, int size, gptr value, void *user_data) {
-	gptr physicalAddress = ((Cpu *) user_data)->mmioHandler->getPhysicalAddressFromVirtual(address);
-	MmioBase *mmio = ((Cpu *) user_data)->mmioHandler->getMMIOFromPhysicalAddress(address);
+void mmioHook(uc_engine *uc, uc_mem_type type, gptr address, uint32_t size, gptr value, void *user_data) {
+	auto cpu = (Cpu *) user_data;
+	auto physicalAddress = cpu->mmioHandler->getPhysicalAddressFromVirtual(address);
+	auto mmio = cpu->mmioHandler->getMMIOFromPhysicalAddress(address);
 	assert(mmio != nullptr);
 	switch(type) {
 		case UC_MEM_READ:
 			LOG_DEBUG(Cpu, "MMIO Read at " ADDRFMT " size %x", physicalAddress, size);
-			((Cpu *) user_data)->readmem(address, &value, size);
-			LOG_DEBUG(Cpu, "Stored value %x", (int) ((Cpu *) user_data)->read8(address));
+			
+			uint64_t ovalue;
+			if(mmio->read(physicalAddress, size, ovalue)) {
+				switch(size) {
+					case 1:
+						cpu->guestptr<uint8_t>(address) = (uint8_t) ovalue;
+						break;
+					case 2:
+						cpu->guestptr<uint16_t>(address) = (uint16_t) ovalue;
+						break;
+					case 4:
+						cpu->guestptr<uint32_t>(address) = (uint32_t) ovalue;
+						break;
+					case 8:
+						cpu->guestptr<uint64_t>(address) = ovalue;
+						break;
+				}
+			}
+			
 			break;
 		case UC_MEM_WRITE:
 			LOG_DEBUG(Cpu, "MMIO Write at " ADDRFMT " size %x data %lx", physicalAddress, size, value);
-			/*if() {
-				((Cpu *) user_data)->writemem(address, &value, size);
-			}*/
-			//mmio->swrite(physicalAddress, size, &value);
-			((Cpu *) user_data)->writemem(address, &value, size);
+			mmio->write(physicalAddress, size, value);
 			break;
 	}
 }
@@ -38,6 +52,21 @@ void codeBpHook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data)
 	thread->regs.PC = address;
 	ctu->cpu.stop();
 	ctu->gdbStub._break();
+}
+
+void memBpHook(uc_engine *uc, uc_mem_type type, uint64_t address, uint32_t size, uint64_t value, void *user_data) {
+	auto ctu = (Ctu *) user_data;
+	if(ctu->cpu.hitMemBreakpoint) {
+		ctu->cpu.hitMemBreakpoint = false;
+		return;
+	}
+	cout << "Hit memory breakpoint accessing ... " << hex << address << endl;
+	auto thread = ctu->tm.current();
+	assert(thread != nullptr);
+	ctu->tm.requeue();
+	ctu->cpu.stop();
+	ctu->gdbStub._break(true);
+	ctu->cpu.hitMemBreakpoint = true;
 }
 
 Cpu::Cpu(Ctu *_ctu) : ctu(_ctu) {
@@ -55,6 +84,8 @@ Cpu::Cpu(Ctu *_ctu) : ctu(_ctu) {
 
 	for(auto i = 0; i < 0x80; ++i)
 		svcHandlers[i] = nullptr;
+
+	hitMemBreakpoint = false;
 }
 
 Cpu::~Cpu() {
@@ -306,8 +337,20 @@ bool Cpu::unmappedHook(uc_mem_type type, gptr addr, int size, guint value) {
 			break;
 		case UC_MEM_WRITE_UNMAPPED:
 		case UC_MEM_WRITE_PROT:
-			LOG_INFO(Cpu, "Attempted to write to %s memory at " ADDRFMT " from " ADDRFMT, (type == UC_MEM_READ_UNMAPPED ? "unmapped" : "protected"), addr, pc());
+			LOG_INFO(Cpu, "Attempted to write " LONGFMT " to %s memory at " ADDRFMT " from " ADDRFMT, value, (type == UC_MEM_READ_UNMAPPED ? "unmapped" : "protected"), addr, pc());
 			break;
+	}
+	if(ctu->gdbStub.enabled) {
+		auto thread = ctu->tm.current();
+		if(thread == nullptr)
+			return false;
+		ctu->tm.requeue();
+		ctu->gdbStub._break(false);
+		if(type == UC_MEM_FETCH_PROT || type == UC_MEM_FETCH_UNMAPPED)
+			pc(TERMADDR);
+		else
+			stop();
+		return true;
 	}
 	return false;
 }
@@ -328,6 +371,14 @@ hook_t Cpu::addCodeBreakpoint(gptr addr) {
 	return hookHandle;
 }
 
-void Cpu::removeCodeBreakpoint(hook_t hook) {
+hook_t Cpu::addMemoryBreakpoint(gptr addr, guint len, BreakpointType type) {
+	assert(ctu->gdbStub.enabled);
+
+	hook_t hookHandle;
+	CHECKED(uc_hook_add(uc, &hookHandle, ((type == BreakpointType::Read || type == BreakpointType::Access) ? UC_HOOK_MEM_READ : 0) | ((type == BreakpointType::Write || type == BreakpointType::Access) ? UC_HOOK_MEM_WRITE : 0), (void *)memBpHook, ctu, addr, addr + len));
+	return hookHandle;
+}
+
+void Cpu::removeBreakpoint(hook_t hook) {
 	CHECKED(uc_hook_del(uc, hook));
 }
