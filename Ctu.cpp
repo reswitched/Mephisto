@@ -11,8 +11,8 @@ void Ctu::execProgram(gptr ep) {
 	auto ss = 8 * 1024 * 1024;
 
 	cpu.map(sp - ss, ss);
-	cpu.setMmio(&mmiohandler);
 	mmiohandler.MMIOInitialize();
+	cpu.setMmio(&mmiohandler);
 
 	auto mainThread = tm.create(ep, sp);
 	mainThread->regs.X1 = mainThread->handle;

@@ -109,6 +109,13 @@ public:
 		return (T) (ptr + sfciOffset + 8 + offset);
 	}
 	gptr getBuffer(int btype, int num, guint& size) {
+		if(btype & 0x20) {
+			auto buf = getBuffer((btype & ~0x20) | 4, num, size);
+			if(size != 0)
+				return buf;
+			return getBuffer((btype & ~0x20) | 8, num, size);
+		}
+
 		size = 0;
 		auto ax = (btype & 3) == 1;
 		auto flags_ = btype & 0xC0;

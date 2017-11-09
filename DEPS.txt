@@ -1,0 +1,2 @@
+https://github.com/lz4/lz4.git
+https://pypi.python.org/pypi/tatsu/4.0.0

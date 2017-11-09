@@ -13,3 +13,10 @@ uint32_t nn::settings::ISystemSettingsServer::GetMiiAuthorId(OUT nn::util::Uuid&
 	buf[1] = 0x000000d00db3c001;
 	return 0;
 }
+
+uint32_t nn::settings::IFactorySettingsServer::GetConfigurationId1(OUT nn::settings::factory::ConfigurationId1& _0) {
+	LOG_DEBUG(IpcStubs, "Stub implementation for nn::settings::IFactorySettingsServer::GetConfigurationId1");
+	memset(_0, 0, 0x1e);
+	strcpy((char *) _0, "MP_00_01_00_00");
+	return 0;
+}

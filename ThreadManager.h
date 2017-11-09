@@ -1,40 +1,7 @@
 #pragma once
 #include "Ctu.h"
 
-typedef struct {
-	float64_t low;
-	float64_t high;
-} float128;
-
-typedef struct {
-	guint SP, PC, NZCV;
-	union {
-		struct {
-			guint gprs[31];
-			float128 fprs[32];
-		};
-		struct {
-			guint  X0,  X1,  X2,  X3, 
-			       X4,  X5,  X6,  X7, 
-			       X8,  X9, X10, X11, 
-			      X12, X13, X14, X15, 
-			      X16, X17, X18, X19, 
-			      X20, X21, X22, X23, 
-			      X24, X25, X26, X27, 
-			      X28, X29, X30;
-			float128   Q0,  Q1,  Q2,  Q3,
-			           Q4,  Q5,  Q6,  Q7, 
-			           Q8,  Q9, Q10, Q11, 
-			          Q12, Q13, Q14, Q15, 
-			          Q16, Q17, Q18, Q19, 
-			          Q20, Q21, Q22, Q23, 
-			          Q24, Q25, Q26, Q27, 
-			          Q28, Q29, Q30, Q31;
-		};
-	};
-} ThreadRegisters;
-
-class Thread : public KObject {
+class Thread : public Waitable {
 public:
 	Thread(Ctu *_ctu, int _id);
 	void assignHandle(ghandle handle);

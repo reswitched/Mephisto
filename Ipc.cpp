@@ -129,13 +129,15 @@ void OutgoingIpcMessage::initialize(uint _moveCount, uint _copyCount, uint dataB
 	auto start = pos;
 	if(pos & 3)
 		pos += 4 - (pos & 3);
-	if(isDomainObject)
+	if(isDomainObject) {
+		buf[pos] = moveCount;
 		pos += 4;
+	}
 	realDataOffset = isDomainObject ? moveCount << 2 : 0;
 	auto dataWords = (realDataOffset >> 2) + (dataBytes & 3) ? (dataBytes >> 2) + 1 : (dataBytes >> 2);
 
 	buf[1] |= 4 + (isDomainObject ? 4 : 0) + 4 + dataWords;
-
+ 
 	sfcoOffset = pos * 4;
 	buf[pos] = FOURCC('S', 'F', 'C', 'O');
 }
@@ -165,7 +167,7 @@ uint32_t IpcService::messageSync(shared_ptr<array<uint8_t, 0x100>> buf, bool& cl
 			closeHandle = true;
 			resp.initialize(0, 0, 0);
 			resp.errCode = 0;
-			ret = 0;
+			ret = 0x25a0b;
 			break;
 		case 4: // Normal
 			ret = target->dispatch(msg, resp);
@@ -192,6 +194,14 @@ uint32_t IpcService::messageSync(shared_ptr<array<uint8_t, 0x100>> buf, bool& cl
 				LOG_DEBUG(Ipc, "QueryPointerBufferSize");
 				resp.initialize(0, 0, 4);
 				*resp.getDataPointer<uint32_t *>(8) = 0x500;
+				resp.errCode = 0;
+				ret = 0;
+				break;
+			case 4: // DuplicateSession
+				LOG_DEBUG(Ipc, "DuplicateSessionEx");
+				resp.isDomainObject = false;
+				resp.initialize(1, 0, 0);
+				resp.move(0, ctu->duplicateHandle(dynamic_cast<KObject *>(this)));
 				resp.errCode = 0;
 				ret = 0;
 				break;

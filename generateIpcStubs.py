@@ -1,6 +1,7 @@
 import glob, hashlib, json, os, os.path, re, sys
 from pprint import pprint
 import idparser, partialparser
+from cStringIO import StringIO
 
 def emitInt(x):
 	return '0x%x' % x if x > 9 else str(x)
@@ -115,6 +116,7 @@ def isPointerType(type):
 		return isPointerType(allTypes[type[0]])
 	return True
 
+INIT = 'INIT'
 AFTER = 'AFTER'
 
 def generateCaller(qname, fname, func):
@@ -155,7 +157,7 @@ def generateCaller(qname, fname, func):
 		elif type == 'KObject':
 			params.append('ctu->getHandle<KObject>(req.getCopied(%i))' % hndOff)
 			logFmt.append('KObject %s= 0x%%x' % ('%s ' % name if name else ''))
-			logElems.append('req.getCopied(%i)' % objOff)
+			logElems.append('req.getCopied(%i)' % hndOff)
 			hndOff += 1
 		elif type == 'pid':
 			params.append('req.pid')
@@ -242,7 +244,7 @@ def generateCaller(qname, fname, func):
 		yield 'return 0xf601;'
 		return
 
-	yield 'resp.initialize(%i, %i, %i);' % (objOff, hndOff, outOffset - 8)
+	yield INIT, 'resp.initialize(%i, %i, %i);' % (objOff, hndOff, outOffset - 8)
 	if len(logFmt):
 		yield 'LOG_DEBUG(IpcStubs, "IPC message to %s: %s"%s);' % (qname + '::' + fname, ', '.join(logFmt), (', ' + ', '.join(logElems)) if logElems else '')
 	else:
@@ -253,12 +255,20 @@ def generateCaller(qname, fname, func):
 
 def reorder(gen):
 	after = []
+	before = []
 	for x in gen:
 		if x == AFTER:
 			for elem in after:
 				yield elem
+		elif isinstance(x, tuple) and x[0] == INIT:
+			yield x[1]
+			for elem in before:
+				yield elem
+			before = None
 		elif isinstance(x, tuple) and x[0] == AFTER:
 			after.append(x[1])
+		elif before is not None:
+			before.append(x)
 		else:
 			yield x
 
@@ -305,90 +315,100 @@ def main():
 		for name in sorted(ifaces.keys()):
 			namespaces[ns].append('class %s;' % name)
 
-	with file('IpcStubs.h', 'w') as fp:
-		print >>fp, '#pragma once'
-		print >>fp, '#include "Ctu.h"'
-		print >>fp
+	fp = StringIO()
+	print >>fp, '#pragma once'
+	print >>fp, '#include "Ctu.h"'
+	print >>fp
 
-		print >>fp, '#define SERVICE_MAPPING() do { \\'
-		for iname, snames in sorted(services.items(), key=lambda x: x[0]):
-			for sname in snames:
-				print >>fp, '\tSERVICE("%s", %s); \\' % (sname, iname)
-		print >>fp, '} while(0)'
-		print >>fp
+	print >>fp, '#define SERVICE_MAPPING() do { \\'
+	for iname, snames in sorted(services.items(), key=lambda x: x[0]):
+		for sname in snames:
+			print >>fp, '\tSERVICE("%s", %s); \\' % (sname, iname)
+	print >>fp, '} while(0)'
+	print >>fp
 
-		for ns, elems in sorted(namespaces.items(), key=lambda x: x[0]):
-			if ns is not None:
-				print >>fp, 'namespace %s {' % ns
-			hasUsing = False
-			for elem in elems:
-				if not hasUsing and elem.startswith('using'):
-					hasUsing = True
-				elif hasUsing and elem.startswith('class'):
-					print >>fp
-					hasUsing = False
-				print >>fp, ('\t' if ns is not None else '') + elem
-			if ns is not None:
-				print >>fp, '}'
+	for ns, elems in sorted(namespaces.items(), key=lambda x: x[0]):
+		if ns is not None:
+			print >>fp, 'namespace %s {' % ns
+		hasUsing = False
+		for elem in elems:
+			if not hasUsing and elem.startswith('using'):
+				hasUsing = True
+			elif hasUsing and elem.startswith('class'):
+				print >>fp
+				hasUsing = False
+			print >>fp, ('\t' if ns is not None else '') + elem
+		if ns is not None:
+			print >>fp, '}'
 
-		print >>fp
+	print >>fp
 
-		allcode = '\n'.join(file(fn, 'r').read() for fn in glob.glob('ipcimpl/*.cpp'))
+	allcode = '\n'.join(file(fn, 'r').read() for fn in glob.glob('ipcimpl/*.cpp'))
 
-		partials = parsePartials(allcode)
+	partials = parsePartials(allcode)
 
-		for ns, ifaces in sorted(ifacesByNs.items(), key=lambda x: x[0]):
-			print >>fp, '%snamespace %s {' % ('//// ' if ns is None else '', ns)
-			for name, funcs in sorted(ifaces.items(), key=lambda x: x[0]):
-				qname = '%s::%s' % (ns, name) if ns else name
-				partial = partials[qname] if qname in partials else None
-				print >>fp, '\tclass %s : public IpcService {' % name
-				print >>fp, '\tpublic:'
-				if re.search('(^|[^a-zA-Z0-9:])%s::%s[^a-zA-Z0-9:]' % (qname, name), allcode):
-					print >>fp, '\t\t%s(Ctu *_ctu%s);' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '')
-				else:
-					print >>fp, '\t\t%s(Ctu *_ctu%s) : IpcService(_ctu)%s {}' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '', ', ' + ', '.join('%s(_%s)' % (v, v) for k, v in partial[1]) if partial and partial[1] else '')
-				print >>fp, '\t\tuint32_t dispatch(IncomingIpcMessage &req, OutgoingIpcMessage &resp) {'
-				print >>fp, '\t\t\tswitch(req.cmdId) {'
-				for fname, func in sorted(funcs.items(), key=lambda x: x[1]['cmdId']):
-					print >>fp, '\t\t\tcase %i: {' % func['cmdId'];
-					print >>fp, '\n'.join('\t\t\t\t' + x for x in reorder(generateCaller(qname, fname, func)))
-					print >>fp, '\t\t\t}'
-				print >>fp, '\t\t\tdefault:'
-				print >>fp, '\t\t\t\tLOG_ERROR(IpcStubs, "Unknown message cmdId %%u to interface %s", req.cmdId);' % ('%s::%s' % (ns, name) if ns else name)
+	for ns, ifaces in sorted(ifacesByNs.items(), key=lambda x: x[0]):
+		print >>fp, '%snamespace %s {' % ('//// ' if ns is None else '', ns)
+		for name, funcs in sorted(ifaces.items(), key=lambda x: x[0]):
+			qname = '%s::%s' % (ns, name) if ns else name
+			partial = partials[qname] if qname in partials else None
+			print >>fp, '\tclass %s : public IpcService {' % name
+			print >>fp, '\tpublic:'
+			if re.search('(^|[^a-zA-Z0-9:])%s::%s[^a-zA-Z0-9:]' % (qname, name), allcode):
+				print >>fp, '\t\t%s(Ctu *_ctu%s);' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '')
+			else:
+				print >>fp, '\t\t%s(Ctu *_ctu%s) : IpcService(_ctu)%s {}' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '', ', ' + ', '.join('%s(_%s)' % (v, v) for k, v in partial[1]) if partial and partial[1] else '')
+			print >>fp, '\t\tuint32_t dispatch(IncomingIpcMessage &req, OutgoingIpcMessage &resp) {'
+			print >>fp, '\t\t\tswitch(req.cmdId) {'
+			for fname, func in sorted(funcs.items(), key=lambda x: x[1]['cmdId']):
+				print >>fp, '\t\t\tcase %i: {' % func['cmdId'];
+				print >>fp, '\n'.join('\t\t\t\t' + x for x in reorder(generateCaller(qname, fname, func)))
 				print >>fp, '\t\t\t}'
-				print >>fp, '\t\t}'
-				for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
-					implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
-					print >>fp, '\t\tuint32_t %s(%s);' % (fname, generatePrototype(func))
-				if partial:
-					for x in partial[0]:
-						print >>fp, '\t\t%s' % x
-				print >>fp, '\t};'
-			print >>fp, '%s}' % ('//// ' if ns is None else '')
+			print >>fp, '\t\t\tdefault:'
+			print >>fp, '\t\t\t\tLOG_ERROR(IpcStubs, "Unknown message cmdId %%u to interface %s", req.cmdId);' % ('%s::%s' % (ns, name) if ns else name)
+			print >>fp, '\t\t\t}'
+			print >>fp, '\t\t}'
+			for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
+				implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
+				print >>fp, '\t\tuint32_t %s(%s);' % (fname, generatePrototype(func))
+			if partial:
+				for x in partial[0]:
+					print >>fp, '\t\t%s' % x
+			print >>fp, '\t};'
+		print >>fp, '%s}' % ('//// ' if ns is None else '')
 
-			print >>fp, '#ifdef DEFINE_STUBS'
-			for name, funcs in sorted(ifaces.items(), key=lambda x: x[0]):
-				qname = '%s::%s' % (ns, name) if ns else name
-				partial = partials[qname] if qname in partials else None
-				for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
-					implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
-					if not implemented:
-						print >>fp, 'uint32_t %s::%s(%s) {' % (qname, fname, generatePrototype(func))
-						print >>fp, '\tLOG_DEBUG(IpcStubs, "Stub implementation for %s::%s");' % (qname, fname)
-						for i, (name, elem) in enumerate(func['outputs']):
-							if elem[0] == 'object' and elem[1][0] != 'IUnknown':
-								name = name if name else '_%i' % (len(func['inputs']) + i)
-								print >>fp, '\t%s = buildInterface(%s);' % (name, elem[1][0])
-								if elem[1][0] in partials and partials[elem[1][0]][1]:
-									print 'Bare construction of interface %s requiring parameters.  Created in %s::%s for parameter %s' % (elem[1][0], qname, fname, name)
-									sys.exit(1)
-							elif elem[0] == 'KObject':
-								name = name if name else '_%i' % (len(func['inputs']) + i)
-								print >>fp, '\t%s = make_shared<FauxHandle>(0x%x);' % (name, uniqInt(qname, fname, name))
-						print >>fp, '\treturn 0;'
-						print >>fp, '}'
-			print >>fp, '#endif // DEFINE_STUBS'
+		print >>fp, '#ifdef DEFINE_STUBS'
+		for name, funcs in sorted(ifaces.items(), key=lambda x: x[0]):
+			qname = '%s::%s' % (ns, name) if ns else name
+			partial = partials[qname] if qname in partials else None
+			for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
+				implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
+				if not implemented:
+					print >>fp, 'uint32_t %s::%s(%s) {' % (qname, fname, generatePrototype(func))
+					print >>fp, '\tLOG_DEBUG(IpcStubs, "Stub implementation for %s::%s");' % (qname, fname)
+					for i, (name, elem) in enumerate(func['outputs']):
+						if elem[0] == 'object' and elem[1][0] != 'IUnknown':
+							name = name if name else '_%i' % (len(func['inputs']) + i)
+							print >>fp, '\t%s = buildInterface(%s);' % (name, elem[1][0])
+							if elem[1][0] in partials and partials[elem[1][0]][1]:
+								print 'Bare construction of interface %s requiring parameters.  Created in %s::%s for parameter %s' % (elem[1][0], qname, fname, name)
+								sys.exit(1)
+						elif elem[0] == 'KObject':
+							name = name if name else '_%i' % (len(func['inputs']) + i)
+							print >>fp, '\t%s = make_shared<FauxHandle>(0x%x);' % (name, uniqInt(qname, fname, name))
+					print >>fp, '\treturn 0;'
+					print >>fp, '}'
+		print >>fp, '#endif // DEFINE_STUBS'
+
+	code = fp.getvalue()
+	if os.path.exists('IpcStubs.h'):
+		with file('IpcStubs.h', 'r') as fp:
+			match = fp.read() == code
+	else:
+		match = False
+	if not match:
+		with file('IpcStubs.h', 'w') as fp:
+			fp.write(code)
 
 if __name__=='__main__':
 	main(*sys.argv[1:])

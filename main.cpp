@@ -60,19 +60,25 @@ bool exists(string fn) {
 void loadNso(Ctu &ctu, const string &lfn, gptr raddr) {
 	assert(exists(lfn));
 	Nso file(lfn);
-	file.load(ctu, raddr, false);
+	if(file.load(ctu, raddr, false) == 0) {
+		LOG_ERROR(NsoLoader, "Failed to load %s", lfn.c_str());
+	}
 	ctu.loadbase = min(raddr, ctu.loadbase);
 	auto top = raddr + 0x100000000;
 	ctu.loadsize = max(top - ctu.loadbase, ctu.loadsize);
+	LOG_INFO(NsoLoader, "Loaded %s at " ADDRFMT, lfn.c_str(), ctu.loadbase);
 }
 
 void loadNro(Ctu &ctu, const string &lfn, gptr raddr) {
 	assert(exists(lfn));
 	Nro file(lfn);
-	file.load(ctu, raddr, true);
+	if(file.load(ctu, raddr, true) == 0) {
+		LOG_ERROR(NroLoader, "Failed to load %s", lfn.c_str());
+	}
 	ctu.loadbase = min(raddr, ctu.loadbase);
 	auto top = raddr + 0x100000000;
 	ctu.loadsize = max(top - ctu.loadbase, ctu.loadsize);
+	LOG_INFO(NroLoader, "Loaded %s at " ADDRFMT, lfn.c_str(), ctu.loadbase);
 }
 
 void runLisp(Ctu &ctu, const string &dir, shared_ptr<Atom> code) {

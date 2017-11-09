@@ -12,11 +12,10 @@ public:
 	}
 	void Setup();
 
-	virtual bool sread(gptr addr, guint size, void *out) {
+	virtual bool read(gptr addr, guint size, uint64_t &value) {
 		return false;
 	}
-	virtual bool swrite(gptr addr, guint size, void *value) {
-		cout << "no" << endl;
+	virtual bool write(gptr addr, guint size, uint64_t value) {
 		return false;
 	}
 
@@ -57,15 +56,4 @@ private:
 	gptr mmioBaseAddr = 0x4000000;//1 << 58;
 	guint mmioBaseSize = 0;
 	unordered_map<gptr, MmioBase *> mmioBases;
-};
-
-class ApbMmio : public MmioBase {
-public:
-	bool sread(gptr addr, guint size, void *out) {
-		return false;
-	}
-	bool swrite(gptr addr, guint size, void *value) {
-		//*value = 0xdeadbeef;
-		return false;
-	}
 };
