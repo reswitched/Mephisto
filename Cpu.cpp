@@ -37,7 +37,7 @@ void mmioHook(uc_engine *uc, uc_mem_type type, gptr address, uint32_t size, gptr
 			
 			break;
 		case UC_MEM_WRITE:
-			LOG_DEBUG(Cpu, "MMIO Write at " ADDRFMT " size %x data %lx", physicalAddress, size, value);
+			LOG_DEBUG(Cpu, "MMIO Write at " ADDRFMT " size %x data " LONGFMT, physicalAddress, size, value);
 			mmio->write(physicalAddress, size, value);
 			break;
 	}
