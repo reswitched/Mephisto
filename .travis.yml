@@ -29,7 +29,9 @@ install:
   - sudo ./make.sh install
   - cd ..
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CC=clang++-5.0; Ld=ld.lld-5.0; fi
+
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then CC=clang++; brew update; brew install lz4; fi
+
 
 
 script: make LD=$Ld CC=$CC
