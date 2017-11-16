@@ -47,8 +47,13 @@ const gptr TERMADDR = 1ULL << 61;
 
 #define FOURCC(a, b, c, d) (((d) << 24) | ((c) << 16) | ((b) << 8) | (a))
 
-#define ADDRFMT "%016lx"
-#define LONGFMT "%lx"
+#ifdef __APPLE__
+	#define ADDRFMT "%016llx"
+	#define LONGFMT "%llx"
+#else
+	#define ADDRFMT "%016lx"
+	#define LONGFMT "%lx"
+#endif
 
 enum LogLevel {
 	None = 0,

@@ -1,5 +1,4 @@
 #include "Ctu.h"
-#include <byteswap.h>
 
 /*$IPC$
 partial nn::lm::ILogger {
