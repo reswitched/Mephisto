@@ -243,7 +243,7 @@ void GdbStub::removeBreakpoint(BreakpointType type, gptr addr) {
 
 	auto bp = p.find(addr);
 	if(bp != p.end()) {
-		LOG_DEBUG(GdbStub, "gdb: removed a breakpoint: %016lx bytes at %016lx of type %d",
+		LOG_DEBUG(GdbStub, "gdb: removed a breakpoint: " ADDRFMT " bytes at " ADDRFMT " of type %d",
 				  bp->second.len, bp->second.addr, type);
 		ctu->cpu.removeBreakpoint(bp->second.hook);
 		p.erase(addr);
@@ -275,7 +275,7 @@ bool GdbStub::checkBreakpoint(gptr addr, BreakpointType type) {
 
 		if(bp->second.active && (addr >= bp->second.addr && addr < bp->second.addr + len)) {
 			LOG_DEBUG(GdbStub,
-					  "Found breakpoint type %d @ %016lx, range: %016lx - %016lx (%d bytes)", type,
+					  "Found breakpoint type %d @ " ADDRFMT ", range: " ADDRFMT " - " ADDRFMT " (%d bytes)", type,
 					  addr, bp->second.addr, bp->second.addr + len, (uint32_t) len);
 			return true;
 		}
@@ -508,7 +508,7 @@ void GdbStub::readMemory() {
 	start_offset = addr_pos + 1;
 	auto len = hexToInt(start_offset, static_cast<uint32_t>((commandBuffer + commandLength) - start_offset));
 
-	LOG_DEBUG(GdbStub, "gdb: addr: %016lx len: %016lx", addr, len);
+	LOG_DEBUG(GdbStub, "gdb: addr: " ADDRFMT " len: " ADDRFMT, addr, len);
 
 	if(len * 2 > sizeof(reply)) {
 		sendReply("E01");
@@ -580,7 +580,7 @@ bool GdbStub::commitBreakpoint(BreakpointType type, gptr addr, uint32_t len) {
 
 	p.insert({addr, breakpoint});
 
-	LOG_DEBUG(GdbStub, "gdb: added %d breakpoint: %016lx bytes at %016lx", type, breakpoint.len,
+	LOG_DEBUG(GdbStub, "gdb: added %d breakpoint: " ADDRFMT " bytes at " ADDRFMT, type, breakpoint.len,
 			  breakpoint.addr);
 
 	return true;

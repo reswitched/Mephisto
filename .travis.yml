@@ -1,6 +1,14 @@
-dist: trusty
-sudo: required
 language: c++
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+    - os: osx
+      osx_image: xcode9.1
+      compiler: clang
+
+
 
 addons:
   apt:
@@ -14,10 +22,17 @@ addons:
       - lld-5.0
       - liblz4-dev
 install:
-  - sudo pip2 install -r requirements.txt
+  -  pip2 install --user -r requirements.txt
   - git clone https://github.com/reswitched/unicorn.git
   - cd unicorn
   - UNICORN_ARCHS="aarch64" ./make.sh
   - sudo ./make.sh install
   - cd ..
-script:  make LD=ld.lld-5.0
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CC=clang++-5.0; Ld=ld.lld-5.0; fi
+
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then CC=clang++; brew update; brew install lz4; fi
+
+
+
+script: make LD=$Ld CC=$CC
+
