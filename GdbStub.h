@@ -52,6 +52,7 @@ private:
 	void writeRegisters();
 	void readMemory();
 	void writeMemory();
+	void isThreadAlive();
 	void step();
 	void _continue();
 	bool commitBreakpoint(BreakpointType type, gptr addr, uint32_t len);

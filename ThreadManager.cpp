@@ -2,7 +2,7 @@
 
 #define INSN_PER_SLICE 1000000
 
-Thread::Thread(Ctu *_ctu, int _id) : ctu(_ctu), id(_id) {
+Thread::Thread(Ctu *_ctu, int _id) : ctu(_ctu), id(_id), started(false) {
 	active = false;
 	memset(&regs, 0, sizeof(ThreadRegisters));
 
@@ -42,6 +42,7 @@ void Thread::resume(function<void()> cb) {
 
 	if(cb != nullptr)
 		onWake(cb);
+	started = true;
 	active = true;
 	ctu->tm.enqueue(id);
 }
@@ -269,6 +270,26 @@ shared_ptr<Thread> ThreadManager::last() {
 	return _last;
 }
 
+bool ThreadManager::setCurrent(int id) {
+	auto thread = threads.find(id);
+	if (thread == threads.end())
+		return false;
+	if(_current != nullptr) {
+		_current->freeze();
+		_last = _current;
+	}
+	_current = thread->second;
+	_current->thaw();
+	return true;
+}
+
+
 bool ThreadManager::isNative(int id) {
 	return nativeThreads.find(id) != nativeThreads.end();
+}
+
+vector<shared_ptr<Thread>> ThreadManager::thread_list() {
+	vector<shared_ptr<Thread>> vals;
+	transform(threads.begin(), threads.end(), back_inserter(vals), [](auto val){return val.second;} );
+	return vals;
 }
