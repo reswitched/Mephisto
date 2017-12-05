@@ -211,6 +211,12 @@ void Svc::ExitThread() {
 
 guint Svc::SleepThread(guint ns) {
 	LOG_DEBUG(Svc[0x0B], "SleepThread 0x" LONGFMT " ns", ns);
+
+	auto thread = ctu->tm.current();
+	// Yield, at least.
+	thread->suspend([=] {
+		thread->resume([=] {});
+	});
 	return 0;
 }
 
