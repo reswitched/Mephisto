@@ -331,16 +331,37 @@ void GdbStub::handleQuery() {
 	else if(strncmp(query, "Xfer:features:read:target.xml:",
 					   strlen("Xfer:features:read:target.xml:")) == 0)
 		sendReply(target_xml);
+	else if (strncmp(query, "fThreadInfo", strlen("fThreadInfo")) == 0) {
+		auto list = ctu->tm.thread_list();
+		char tmp[17] = {0};
+		string val = "m";
+		for (auto it = list.begin(); it != list.end(); it++) {
+			if (!(*it)->started)
+				continue;
+			memset(tmp, 0, sizeof(tmp));
+			sprintf(tmp, "%x", (*it)->id);
+			val += (char*)tmp;
+			val += ",";
+		}
+		val.pop_back();
+		sendReply(val.c_str());
+	} else if (strncmp(query, "sThreadInfo", strlen("sThreadInfo")) == 0)
+		sendReply("l");
 	else
 		sendReply("");
 }
 
 void GdbStub::handleSetThread() {
-	if(memcmp(commandBuffer, "Hg0", 3) == 0 || memcmp(commandBuffer, "Hc-1", 4) == 0 ||
-		memcmp(commandBuffer, "Hc0", 4) == 0 || memcmp(commandBuffer, "Hc1", 4) == 0)
-		return sendReply("OK");
-
-	sendReply("E01");
+	// TODO: allow actually changing threads now :|
+	if(memcmp(commandBuffer, "Hg", 2) == 0 || memcmp(commandBuffer, "Hc", 2) == 0) {
+		// Get thread id
+		if (commandBuffer[2] != '-') {
+			int threadid = (int)hexToInt(commandBuffer + 2, strlen((char*)commandBuffer + 2));
+			ctu->tm.setCurrent(threadid);
+		}
+		sendReply("OK");
+	} else
+		sendReply("E01");
 }
 
 auto stringFromFormat(const char* format, ...) {
@@ -364,7 +385,10 @@ void GdbStub::sendSignal(uint32_t signal) {
 	intToGdbHex(sp, reg(31));
 	intToGdbHex(pc, reg(32));
 
+	auto curthread = ctu->tm.current();
 	string buffer = stringFromFormat("T%02x%02x:%.16s;%02x:%.16s;", latestSignal, 32, pc, 31, sp);
+	if (curthread != nullptr)
+		buffer += stringFromFormat("thread:%x;", curthread->id);
 	LOG_DEBUG(GdbStub, "Response: %s", buffer.c_str());
 	sendReply(buffer.c_str());
 }
@@ -669,6 +693,18 @@ void GdbStub::removeBreakpoint() {
 	sendReply("OK");
 }
 
+void GdbStub::isThreadAlive() {
+	int threadid = (int)hexToInt(commandBuffer + 1, strlen((char*)commandBuffer + 1));
+	auto threads = ctu->tm.thread_list();
+	for (auto it = threads.begin(); it != threads.end(); it++) {
+		if ((*it)->id == threadid) {
+			sendReply("OK");
+			return;
+		}
+	}
+	sendReply("E01");
+}
+
 void GdbStub::handlePacket() {
 	if(!isDataAvailable())
 		return;
@@ -718,6 +754,9 @@ void GdbStub::handlePacket() {
 		return;
 	case 'z':
 		removeBreakpoint();
+		break;
+	case 'T':
+		isThreadAlive();
 		break;
 	case 'Z':
 		addBreakpoint();

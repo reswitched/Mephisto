@@ -14,6 +14,7 @@ public:
 	void onWake(function<void()> cb);
 
 	int id;
+	bool started;
 	ghandle handle;
 	bool active;
 	ThreadRegisters regs;
@@ -54,8 +55,10 @@ public:
 	void terminate(int id);
 	shared_ptr<Thread> current();
 	shared_ptr<Thread> last();
-
+	bool setCurrent(int id);
 	bool switched;
+
+	vector<shared_ptr<Thread>> thread_list();
 
 private:
 	void tryRunNative();
