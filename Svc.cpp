@@ -124,8 +124,12 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 
 tuple<guint, guint> Svc::SetHeapSize(guint size) {
 	LOG_DEBUG(Svc[0x01], "SetHeapSize 0x" LONGFMT, size);
+	if (ctu->heapsize < size) {
+		ctu->cpu.map(0xaa0000000 + ctu->heapsize, size - ctu->heapsize);
+	} else if (ctu->heapsize > size) {
+		ctu->cpu.unmap(0xaa0000000 + size, ctu->heapsize - size);
+	}
 	ctu->heapsize = size;
-	ctu->cpu.map(0xaa0000000, size);
 	return make_tuple(0, 0xaa0000000);
 }
 
