@@ -9,7 +9,6 @@ Thread::Thread(Ctu *_ctu, int _id) : ctu(_ctu), id(_id) {
 	auto tlsSize = 1024 * 1024;
 	tlsBase = (1 << 24) + tlsSize * _id;
 	ctu->cpu.map(tlsBase, tlsSize);
-	ctu->cpu.guestptr<gptr>(tlsBase + 0x1F8) = tlsBase + 0x200;
 }
 
 void Thread::assignHandle(uint32_t _handle) {
