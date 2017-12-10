@@ -385,10 +385,14 @@ void GdbStub::sendSignal(uint32_t signal) {
 	intToGdbHex(sp, reg(31));
 	intToGdbHex(pc, reg(32));
 
-	auto curthread = ctu->tm.current();
 	string buffer = stringFromFormat("T%02x%02x:%.16s;%02x:%.16s;", latestSignal, 32, pc, 31, sp);
+
+	auto curthread = ctu->tm.current();
+	if(curthread == nullptr)
+		curthread = ctu->tm.last();
 	if (curthread != nullptr)
 		buffer += stringFromFormat("thread:%x;", curthread->id);
+
 	LOG_DEBUG(GdbStub, "Response: %s", buffer.c_str());
 	sendReply(buffer.c_str());
 }
