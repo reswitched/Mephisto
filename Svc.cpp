@@ -219,7 +219,9 @@ guint Svc::SleepThread(guint ns) {
 	auto thread = ctu->tm.current();
 	// Yield, at least.
 	thread->suspend([=] {
-		thread->resume([=] {});
+		thread->resume([=] {
+				thread->regs.X0 = 0;
+		});
 	});
 	return 0;
 }
