@@ -92,7 +92,7 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc_ret_X0(       0x19, CancelSynchronization, (ghandle) IX0);
 	registerSvc_ret_X0(       0x1A, LockMutex, (ghandle) IX0, IX1, (ghandle) IX2);
 	registerSvc(              0x1B, UnlockMutex, IX0);
-	registerSvc(              0x1C, WaitProcessWideKeyAtomic, IX0, IX1, (ghandle) IX2, IX3);
+	registerSvc_ret_X0(       0x1C, WaitProcessWideKeyAtomic, IX0, IX1, (ghandle) IX2, IX3);
 	registerSvc_ret_X0(       0x1D, SignalProcessWideKey, IX0, IX1);
 	registerSvc_ret_X0_X1(    0x1F, ConnectToPort, IX1);
 	registerSvc_ret_X0(       0x21, SendSyncRequest, (ghandle) IX0);
@@ -388,7 +388,7 @@ shared_ptr<Semaphore> Svc::ensureSemaphore(gptr semaAddr) {
 	return semaphores[semaAddr];
 }
 
-void Svc::WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle threadHandle, guint timeout) {
+guint Svc::WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle threadHandle, guint timeout) {
 	LOG_DEBUG(Svc[0x1C], "WaitProcessWideKeyAtomic 0x" LONGFMT " 0x" LONGFMT " 0x%x 0x" LONGFMT, mutexAddr, semaAddr, threadHandle, timeout);
 
 	auto mutex = ensureMutex(mutexAddr);
@@ -398,7 +398,7 @@ void Svc::WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle thread
 
 	if(semaphore->value() > 0) {
 		semaphore->decrement();
-		return;
+		return 0;
 	}
 
 	auto thread = ctu->getHandle<Thread>(threadHandle);
@@ -406,13 +406,14 @@ void Svc::WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle thread
 		semaphore->wait([=] {
 			semaphore->decrement();
 			thread->resume([=] {
-				LockMutex(0, mutexAddr, threadHandle);
+				thread->regs.X0 = LockMutex(0, mutexAddr, threadHandle);
 			});
 			return 1;
 		});
 	});
 
 	mutex->guestRelease();
+	return 0;
 }
 
 guint Svc::SignalProcessWideKey(gptr semaAddr, guint target) {
