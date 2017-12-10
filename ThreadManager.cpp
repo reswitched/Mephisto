@@ -123,7 +123,8 @@ void ThreadManager::start() {
 			ctu->cpu.exec(wasStep ? 1 : INSN_PER_SLICE);
 			if(wasStep) {
 				ctu->gdbStub.haltLoop = ctu->gdbStub.stepLoop = false;
-				_current->freeze();
+				if (_current != nullptr)
+					_current->freeze();
 				ctu->gdbStub._break();
 			}
 		} else {
