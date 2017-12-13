@@ -80,13 +80,17 @@ To run Mephisto it needs access to your NSO/NRO files, make sure to bind mount t
 
 __Example:__
 ```bash
-docker run -ti --rm -p 24689:24689 -v $HOME:$HOME reswitched/mephisto --load-nro $HOME/Coding/libtransistor/build/test/test_helloworld.nro
+docker run -ti --rm -p 24689:24689 -v $HOME:$HOME -u $UID reswitched/mephisto --load-nro $HOME/Coding/libtransistor/build/test/test_helloworld.nro
 ```
 
 You can also create a bash alias.
 
 ```
-alias ctu='docker run -ti --rm -p 24689:24689 -v $HOME:$HOME reswitched/mephisto'
+alias ctu='docker run -ti --rm -p 24689:24689 -v $HOME:$HOME -u $UID reswitched/mephisto'
 ```
 
-Now you can simply run `ctu` with your desired arguments.
+Now you can simply run `ctu` with your desired arguments. 
+__Example:__
+```bash
+ctu --load-nro $HOME/Coding/libtransistor/build/test/test_helloworld.nro
+```

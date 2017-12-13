@@ -18,6 +18,7 @@ RUN cd /nonexistent; git clone  --depth 1 https://github.com/reswitched/Mephisto
   pip install -r requirements.txt;\
   EXTRA_CC_FLAGS="-I ../usr/include" EXTRA_LD_FLAGS="-L ../usr/lib" make
 
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nonexistent/usr/lib
 
 EXPOSE 24689
 
