@@ -68,3 +68,24 @@ Alternatively, you can pass a single NSO file on the command line:
 ```
 
 See help for other info, e.g. enabling GDB support.
+
+### Run through Docker
+First build the docker image, this may take some time
+
+```bash
+docker build -t reswitched/mephisto .
+```
+
+To run Mephisto it needs access to your NSO/NRO files, make sure to bind mount the location into the container.
+
+```bash
+docker run -ti --rm -p 24689:24689 -v /home/$USER:/home/$USER reswitched/mephisto --load-nro /$HOME/Coding/libtransistor/build/test/test_helloworld.nro
+```
+
+You can also create a bash alias.
+
+```
+alias ctu='docker run -ti --rm -p 24689:24689 -v /home/$USER:/home/$USER reswitched/mephisto'
+```
+
+Now you can simply run `ctu` with your desired arguments.
