@@ -6,7 +6,7 @@ Thread::Thread(Ctu *_ctu, int _id) : ctu(_ctu), id(_id), started(false) {
 	active = false;
 	memset(&regs, 0, sizeof(ThreadRegisters));
 
-	auto tlsSize = 1024 * 1024;
+	auto tlsSize = 0x1000;
 	tlsBase = (1 << 24) + tlsSize * _id;
 	ctu->cpu.map(tlsBase, tlsSize);
 }
@@ -19,6 +19,8 @@ void Thread::assignHandle(uint32_t _handle) {
 void Thread::terminate() {
 	signal();
 	ctu->tm.terminate(id);
+	auto tlsSize = 0x1000;
+	ctu->cpu.unmap(tlsBase, tlsSize);
 }
 
 void Thread::suspend(function<void()> cb) {
@@ -121,7 +123,8 @@ void ThreadManager::start() {
 			ctu->cpu.exec(wasStep ? 1 : INSN_PER_SLICE);
 			if(wasStep) {
 				ctu->gdbStub.haltLoop = ctu->gdbStub.stepLoop = false;
-				_current->freeze();
+				if (_current != nullptr)
+					_current->freeze();
 				ctu->gdbStub._break();
 			}
 		} else {
