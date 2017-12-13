@@ -5,12 +5,14 @@ RUN apt update; apt install -y wget; \
   echo 'deb http://apt.llvm.org/xenial/ llvm-toolchain-artful-5.0 main' >> /etc/apt/sources.list ; apt update;\
   apt install -y clang-5.0 lldb-5.0 lld-5.0 libc++-dev git cmake python-pip liblz4-dev; apt clean all
 
+RUN mkdir /build; chown nobody:nogroup /build
+USER nobody
 
-RUN cd ~; git clone https://github.com/reswitched/unicorn.git;\
+RUN cd /build; git clone https://github.com/reswitched/unicorn.git;\
   cd unicorn;\
   UNICORN_ARCHS="aarch64" ./make.sh;\
   ./make.sh install;\  
-  cd ~; git clone https://github.com/reswitched/Mephisto.git; \
+  cd /build; git clone https://github.com/reswitched/Mephisto.git; \
   cd Mephisto;\
   pip install -r requirements.txt;\
   make
@@ -18,5 +20,5 @@ RUN cd ~; git clone https://github.com/reswitched/unicorn.git;\
 EXPOSE 24689
 
 
-ENTRYPOINT ["/root/Mephisto/ctu"]
+ENTRYPOINT ["/build/Mephisto/ctu"]
 CMD ["${*}"] 
