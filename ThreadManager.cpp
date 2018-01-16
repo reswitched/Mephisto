@@ -137,7 +137,7 @@ shared_ptr<Thread> ThreadManager::create(gptr pc, gptr sp) {
 	threads[thread->id] = thread;
 	thread->regs.PC = pc;
 	thread->regs.SP = sp;
-	thread->regs.X30 = TERMADDR;
+	thread->regs.X30 = 0;
 	return thread;
 }
 
