@@ -47,7 +47,7 @@ private:
 	guint CancelSynchronization(ghandle handle); // 0x19
 	guint LockMutex(ghandle curthread, gptr mutexAddr, ghandle reqthread); // 0x1A
 	void UnlockMutex(gptr mutexAddr); // 0x1B
-	void WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle threadHandle, guint timeout); // 0x1C
+	guint WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle threadHandle, guint timeout); // 0x1C
 	guint SignalProcessWideKey(gptr semaAddr, guint target); // 0x1D
 	guint GetSystemTick(); // 0x1E
 	tuple<guint, ghandle> ConnectToPort(guint name); // 0x1F
