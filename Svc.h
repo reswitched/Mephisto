@@ -49,6 +49,7 @@ private:
 	void UnlockMutex(gptr mutexAddr); // 0x1B
 	void WaitProcessWideKeyAtomic(gptr mutexAddr, gptr semaAddr, ghandle threadHandle, guint timeout); // 0x1C
 	guint SignalProcessWideKey(gptr semaAddr, guint target); // 0x1D
+	guint GetSystemTick(); // 0x1E
 	tuple<guint, ghandle> ConnectToPort(guint name); // 0x1F
 	guint SendSyncRequest(ghandle handle); // 0x21
 	guint SendSyncRequestEx(gptr buf, guint size, ghandle handle); // 0x22

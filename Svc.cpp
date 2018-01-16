@@ -1,5 +1,7 @@
 #include "Ctu.h"
 
+#include<time.h>
+
 #define IX0 (ctu->cpu.reg(0))
 #define IX1 (ctu->cpu.reg(1))
 #define IX2 (ctu->cpu.reg(2))
@@ -94,6 +96,7 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc(              0x1B, UnlockMutex, IX0);
 	registerSvc(              0x1C, WaitProcessWideKeyAtomic, IX0, IX1, (ghandle) IX2, IX3);
 	registerSvc_ret_X0(       0x1D, SignalProcessWideKey, IX0, IX1);
+	registerSvc_ret_X0(       0x1E, GetSystemTick);
 	registerSvc_ret_X0_X1(    0x1F, ConnectToPort, IX1);
 	registerSvc_ret_X0(       0x21, SendSyncRequest, (ghandle) IX0);
 	registerSvc_ret_X0(       0x22, SendSyncRequestEx, IX0, IX1, (ghandle) IX2);
@@ -424,6 +427,12 @@ guint Svc::SignalProcessWideKey(gptr semaAddr, guint target) {
 	else if(target == 0xffffffff)
 		semaphore->signal();
 	return 0;
+}
+
+guint Svc::GetSystemTick() {
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	return (((uint64_t) time.tv_sec) * 19200000) + ((((uint64_t) time.tv_nsec) * 192) / 10000);
 }
 
 tuple<guint, ghandle> Svc::ConnectToPort(guint name) {
