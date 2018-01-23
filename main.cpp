@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 		ctu.execProgram(0x7100000000);
 	} else if(options[NRO].count()) {
 		loadNro(ctu, options[NRO][0].arg, 0x7100000000);
-		ctu.execProgram(0x7100000080);
+		ctu.execProgram(0x7100000000);
 	} else {
 		string dir = parse.nonOption(0);
 		auto lfn = dir + "/load.meph";
