@@ -9,6 +9,138 @@ Nxo::Nxo(string fn) {
 }
 
 typedef struct {
+    uint32_t out_offset;
+    uint32_t out_size;
+    uint32_t compressed_size;
+    uint32_t attribute;
+} kip_section_header_t;
+
+typedef struct {
+    uint32_t magic;
+    char name[0xC];
+    uint64_t title_id;
+    uint32_t process_category;
+    uint8_t main_thread_priority;
+    uint8_t default_core;
+    uint8_t _0x1E;
+    uint8_t flags;
+    kip_section_header_t section_headers[6];
+    uint32_t capabilities[0x20];
+} kip1_header_t;
+
+typedef struct {
+	uint32_t compressed_size;
+	uint32_t init_index;
+	uint32_t uncompressed_added_size;
+} blz_footer;
+
+char *kip1_decompress(ifstream &fp, size_t offset, uint32_t csize, uint32_t usize) {
+	fp.seekg(offset);
+
+	unsigned char *compressed = new unsigned char[csize];
+	unsigned char *decompressed = new unsigned char[usize];
+	fp.read((char*)compressed, csize);
+
+	/*
+	memcpy(decompressed, compressed, csize);
+	memset(decompressed + csize, 0, usize - csize);*/
+
+
+	blz_footer *footer = (blz_footer*)(compressed + csize - 0xC);
+	assert(csize == footer->compressed_size);
+	assert(usize == footer->compressed_size + footer->uncompressed_added_size);
+
+	int index = csize - footer->init_index;
+	int outindex = usize;
+	while (outindex > 0) {
+		index -= 1;
+		unsigned char control = compressed[index];
+		for (int i = 0; i < 8; i++) {
+			if (control & 0x80) {
+				if (index < 2) {
+					// Compression out of bounds
+					assert(false);
+				}
+				index -= 2;
+				unsigned int segmentoffset = compressed[index] | (compressed[index + 1] << 8);
+				unsigned int segmentsize = ((segmentoffset >> 12) & 0xF) + 3;
+				segmentoffset &= 0x0FFF;
+				segmentoffset += 2;
+				if (outindex < segmentsize) {
+					// Compression out of bounds
+					assert(false);
+				}
+				for (int j = 0; j < segmentsize; j++) {
+					if (outindex + segmentoffset >= usize) {
+						// Compression out of boundds
+						assert(false);
+					}
+					char data = decompressed[outindex + segmentoffset];
+					outindex -= 1;
+					decompressed[outindex] = data;
+				}
+			} else {
+				if (outindex < 1) {
+					// Compression out of bounds
+					assert(false);
+				}
+				outindex -= 1;
+				index -= 1;
+				decompressed[outindex] = compressed[index];
+			}
+			control <<= 1;
+			control &= 0xFF;
+			if (outindex == 0)
+				break;
+		}
+	}
+	delete[] compressed;
+	return (char*)decompressed;
+}
+
+static uint32_t align(uint32_t offset, uint32_t alignment) {
+    uint32_t mask = ~(alignment-1);
+
+    return (offset + (alignment-1)) & mask;
+}
+
+guint Kip::load(Ctu &ctu, gptr base, bool relocate) {
+	kip1_header_t hdr;
+	fp.read((char*)&hdr, sizeof(kip1_header_t));
+	if (hdr.magic != FOURCC('K', 'I', 'P', '1'))
+		return 0;
+
+	// TODO: probably inaccurate
+	// Find max size
+	gptr tmaxsize = hdr.section_headers[0].out_offset + align(hdr.section_headers[0].out_size, 0x1000);
+	gptr romaxsize = hdr.section_headers[1].out_offset + align(hdr.section_headers[1].out_size, 0x1000);
+	gptr rwmaxsize = hdr.section_headers[2].out_offset + align(hdr.section_headers[2].out_size, 0x1000);
+	gptr bssmaxsize = hdr.section_headers[3].out_offset + align(hdr.section_headers[3].out_size, 0x1000);
+
+	gptr maxsize = std::max( { tmaxsize, romaxsize, rwmaxsize, bssmaxsize } );
+	printf("WTF IS THIS: %lx\n", maxsize);
+	ctu.cpu.map(base, maxsize);
+
+	size_t toff = 0x100;
+	size_t roff = toff + hdr.section_headers[0].compressed_size;
+	size_t doff = roff + hdr.section_headers[1].compressed_size;
+
+	char *text = kip1_decompress(fp, toff, hdr.section_headers[0].compressed_size, hdr.section_headers[0].out_size);
+	ctu.cpu.writemem(base + hdr.section_headers[0].out_offset, text, hdr.section_headers[0].out_size);
+	delete[] text;
+
+	char *ro = kip1_decompress(fp, roff, hdr.section_headers[1].compressed_size, hdr.section_headers[1].out_size);
+	ctu.cpu.writemem(base + hdr.section_headers[1].out_offset, ro, hdr.section_headers[1].out_size);
+	delete[] ro;
+
+	char *data = kip1_decompress(fp, doff, hdr.section_headers[2].compressed_size, hdr.section_headers[2].out_size);
+	ctu.cpu.writemem(base + hdr.section_headers[2].out_offset, data, hdr.section_headers[2].out_size);
+	delete[] data;
+
+	return maxsize;
+}
+
+typedef struct {
 	uint32_t magic, pad0, pad1, pad2;
 	uint32_t textOff, textLoc, textSize, pad3;
 	uint32_t rdataOff, rdataLoc, rdataSize, pad4;

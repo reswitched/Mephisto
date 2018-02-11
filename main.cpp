@@ -38,7 +38,7 @@ struct Arg: public option::Arg
   }
 };
 
-enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, ENABLE_SOCKETS };
+enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, KIP, ENABLE_SOCKETS };
 const option::Descriptor usage[] =
 {
 	{UNKNOWN, 0, "", "",Arg::None, "USAGE: ctu [options] <load-directory>\n\n"
@@ -48,6 +48,7 @@ const option::Descriptor usage[] =
 	{PORT, 0,"p","gdb-port",Arg::Numeric, "  --gdb-port, -p  \tSet port for GDB; default 24689." },
 	{NSO, 0,"","load-nso",Arg::NonEmpty, "  --load-nso  \tLoad an NSO without load directory"},
 	{NRO, 0,"","load-nro",Arg::NonEmpty, "  --load-nro  \tLoad an NRO without load directory (entry point .text+0x80)"},
+	{KIP, 0,"","load-kip",Arg::NonEmpty, "  --load-kip  \tLoad a KIP without load directory"},
 	{ENABLE_SOCKETS, 0, "b","enable-sockets",Arg::None, "  -- enable-sockets, -b  \tEnable BSD socket passthrough." },
 	{0,0,nullptr,nullptr,nullptr,nullptr}
 };
@@ -55,6 +56,18 @@ const option::Descriptor usage[] =
 bool exists(string fn) {
 	struct stat buffer;
 	return stat(fn.c_str(), &buffer) == 0;
+}
+
+void loadKip(Ctu &ctu, const string &lfn, gptr raddr) {
+	assert(exists(lfn));
+	Kip file(lfn);
+	if(file.load(ctu, raddr, false) == 0) {
+		LOG_ERROR(KipLoader, "Failed to load %s", lfn.c_str());
+	}
+	ctu.loadbase = min(raddr, ctu.loadbase);
+	auto top = raddr + 0x100000000;
+	ctu.loadsize = max(top - ctu.loadbase, ctu.loadsize);
+	LOG_INFO(KipLoader, "Loaded %s at " ADDRFMT, lfn.c_str(), ctu.loadbase);
 }
 
 void loadNso(Ctu &ctu, const string &lfn, gptr raddr) {
@@ -92,6 +105,13 @@ void runLisp(Ctu &ctu, const string &dir, shared_ptr<Atom> code) {
 		auto raddr = addr->numVal;
 		auto lfn = dir + "/" + fn->strVal;
 		loadNso(ctu, lfn, raddr);
+	} else if(head->strVal == "load-kip") {
+		assert(code->children.size() == 3);
+		auto fn = code->children[1], addr = code->children[2];
+		assert(fn->type == String && addr->type == Number);
+		auto raddr = addr->numVal;
+		auto lfn = dir + "/" + fn->strVal;
+		loadKip(ctu, lfn, raddr);
 	} else if(head->strVal == "run-from") {
 		assert(code->children.size() == 2 && code->children[1]->type == Number);
 		ctu.execProgram(code->children[1]->numVal);
@@ -119,10 +139,17 @@ int main(int argc, char **argv) {
 		if(options[NSO].count() > 0) {
 			if(options[NSO].count() != 1) { goto printUsage; }
 			if(options[NRO].count() != 0) { goto printUsage; }
+			if(options[KIP].count() != 0) { goto printUsage; }
 			if(parse.nonOptionsCount() != 0) { goto printUsage; }
 		} else if(options[NRO].count() > 0) {
 			if(options[NRO].count() != 1) { goto printUsage; }
 			if(options[NSO].count() != 0) { goto printUsage; }
+			if(options[KIP].count() != 0) { goto printUsage; }
+			if(parse.nonOptionsCount() != 0) { goto printUsage; }
+		} else if(options[KIP].count() > 0) {
+			if(options[KIP].count() != 1) { goto printUsage; }
+			if(options[NSO].count() != 0) { goto printUsage; }
+			if(options[NRO].count() != 0) { goto printUsage; }
 			if(parse.nonOptionsCount() != 0) { goto printUsage; }
 		} else {
 			if(parse.nonOptionsCount() != 1) { goto printUsage; }
@@ -150,6 +177,9 @@ int main(int argc, char **argv) {
 	} else if(options[NRO].count()) {
 		loadNro(ctu, options[NRO][0].arg, 0x7100000000);
 		ctu.execProgram(0x7100000080);
+	} else if(options[KIP].count()) {
+		loadKip(ctu, options[KIP][0].arg, 0x7100000000);
+		ctu.execProgram(0x7100000000);
 	} else {
 		string dir = parse.nonOption(0);
 		auto lfn = dir + "/load.meph";
