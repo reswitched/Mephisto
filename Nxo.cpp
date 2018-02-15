@@ -41,16 +41,16 @@ char *kip1_decompress(ifstream &fp, size_t offset, uint32_t csize, uint32_t usiz
 	unsigned char *decompressed = new unsigned char[usize];
 	fp.read((char*)compressed, csize);
 
-	/*
-	memcpy(decompressed, compressed, csize);
-	memset(decompressed + csize, 0, usize - csize);*/
-
-
 	blz_footer *footer = (blz_footer*)(compressed + csize - 0xC);
-	assert(csize == footer->compressed_size);
-	assert(usize == footer->compressed_size + footer->uncompressed_added_size);
+	// Ugly hack, *not* sorry. Blame SciresM :3
+	if (csize != footer->compressed_size) {
+		assert(csize == footer->compressed_size + 1);
+		footer->init_index -= 1;
+	}
 
-	int index = csize - footer->init_index;
+	assert(usize == csize + footer->uncompressed_added_size);
+
+	int index = footer->compressed_size - footer->init_index;
 	int outindex = usize;
 	while (outindex > 0) {
 		index -= 1;
