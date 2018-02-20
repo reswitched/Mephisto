@@ -160,8 +160,12 @@ guint Svc::UnmapMemory(gptr dest, gptr src, guint size) {
 typedef struct {
 	gptr begin;
 	gptr size;
-	gptr perms;
-	guint cperm;
+	uint32_t memory_type;
+	uint32_t memory_attribute;
+	uint32_t permission;
+	uint32_t device_ref_count;
+	uint32_t ipc_ref_count;
+	uint32_t padding;
 } MemInfo;
 
 tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
@@ -172,15 +176,19 @@ tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
 			MemInfo minfo;
 			minfo.begin = begin;
 			minfo.size = end - begin + 1;
-			minfo.perms = perm == -1 ? 0 : 3; // FREE or CODE
-			minfo.cperm = 0;
+			minfo.memory_type = perm == -1 ? 0 : 3; // FREE or CODE
+			minfo.memory_attribute = 0;
+			if(addr >= 0xaa0000000 && addr <= 0xaa0000000 + ctu->heapsize) {
+				minfo.memory_type = 5; // HEAP
+			}
+			minfo.permission = 0;
 
 			if(perm != -1) {
 				auto offset = *ctu->cpu.guestptr<uint32_t>(begin + 4);
 				if(begin + offset + 4 < end && *ctu->cpu.guestptr<uint32_t>(begin + offset) == FOURCC('M', 'O', 'D', '0'))
-					minfo.cperm = 5;
+					minfo.permission = 5;
 				else
-					minfo.cperm = 3;
+					minfo.permission = 3;
 			}
 			ctu->cpu.guestptr<MemInfo>(meminfo) = minfo;
 			break;
@@ -193,7 +201,7 @@ tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
 // but this makes it easier to return values from
 // libtransistor tests.
 void Svc::ExitProcess(guint exitCode) {
-	LOG_DEBUG(Svc[0x07], "ExitProcess");
+	LOG_DEBUG(Svc[0x07], "ExitProcess %ld", exitCode);
 	exit((int) exitCode);
 }
 
