@@ -523,16 +523,16 @@ tuple<guint, guint> Svc::GetInfo(guint id1, ghandle handle, guint id2) {
 	LOG_DEBUG(Svc[0x29], "GetInfo handle=0x%x id1=0x" LONGFMT " id2=" LONGFMT, handle, id1, id2);
 	matchpair(0, 0, 0xF);
 	matchpair(1, 0, 0xFFFFFFFF00000000);
-	matchpair(2, 0, 0x7100000000);
-	matchpair(3, 0, 0x1000000000);
-	matchpair(4, 0, 0xaa0000000);
-	matchpair(5, 0, ctu->heapsize); // Heap region size
+	matchpair(2, 0, 0xbb00000000); // map region
+	matchpair(3, 0, 0x1000000000); // size
+	matchpair(4, 0, 0xaa0000000); // heap region
+	matchpair(5, 0, ctu->heapsize); // size
 	matchpair(6, 0, 0x400000);
 	matchpair(7, 0, 0x10000);
 	matchpair(12, 0, 0x8000000);
 	matchpair(13, 0, 0x7ff8000000);
-	matchpair(14, 0, ctu->loadbase);
-	matchpair(15, 0, ctu->loadsize);
+	matchpair(14, 0, 0xbb00000000); // new map region
+	matchpair(15, 0, 0x1000000000); // size
 	matchpair(18, 0, 0x0100000000000036); // Title ID
 	matchone(11, 0);
 
