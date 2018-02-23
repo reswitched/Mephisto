@@ -1,4 +1,5 @@
 #include "Ctu.h"
+#include <dirent.h>
 
 /*$IPC$
 partial nn::fssrv::sf::IFile {
@@ -18,6 +19,12 @@ partial nn::fssrv::sf::IStorage {
 	void *fp;
 	bool isOpen;
 	long bufferOffset;
+}
+partial nn::fssrv::sf::IDirectory {
+	[ctor] string fn;
+	[ctor] uint32_t filter;
+	void *fp;
+	bool isOpen;
 }
 */
 
@@ -260,6 +267,57 @@ uint32_t nn::fssrv::sf::IFileSystemProxyForLoader::MountCode(IN nn::ApplicationI
 
 /* ---------------------------------------- End of IFileSystem ---------------------------------------- */
 
+/* ---------------------------------------- Start of IDirectory ----------------------------------- */
+// Interface
+nn::fssrv::sf::IDirectory::IDirectory(Ctu *_ctu, string  _fn, uint32_t  _filter) : IpcService(_ctu), fn(_fn), filter(_filter) {
+	LOG_DEBUG(Fsp, "IDirectory: Directory path \"%s\"", fn.c_str());
+	fp = opendir(fn.c_str());
+	if(fp) {
+		isOpen = true;
+	} else {
+		LOG_DEBUG(Fsp, "DIRECTORY NOT FOUND!");
+		isOpen = false;
+	}
+}
+
+struct DirectoryEntry {
+	char path[0x300];
+	uint32_t unk1;
+	uint8_t entry_type;
+	uint8_t pad[3];
+	uint64_t filesize;
+};
+
+static_assert(sizeof(DirectoryEntry) == 0x310);
+
+uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t * entries_buf, guint entries_buf_len) {
+	size_t entries_count = entries_buf_len / sizeof(DirectoryEntry);
+	LOG_DEBUG(Fsp, "IDirectory::Read: Attempting to read %zu entries (from %zu)", entries_count, entries_buf_len);
+	struct DirectoryEntry *entries = (struct DirectoryEntry*)entries_buf;
+	struct dirent *curdir;
+	struct stat curdir_stat;
+	uint64_t i;
+
+	for (i = 0; i < entries_count; i++) {
+		curdir = readdir((DIR*)fp);
+		if (curdir == nullptr)
+			break;
+		strcpy(entries[i].path, curdir->d_name);
+		entries[i].unk1 = 0;
+		entries[i].entry_type = curdir->d_type == DT_DIR ? 0 : 1;
+		if (stat((fn + std::string("/") + std::string(curdir->d_name)).c_str(), &curdir_stat) == -1) {
+			LOG_DEBUG(Fsp, "We got an error getting size of %s", curdir->d_name);
+			perror("stat");
+			return 0x271002;/* error out */
+		}
+		entries[i].filesize = curdir_stat.st_size;
+	}
+	entries_read = i;
+	return 0;
+}
+
+
+/* ---------------------------------------- End of IFileSystem ---------------------------------------- */
 
 /* ---------------------------------------- Start of IFile ---------------------------------------- */
 // Interface
@@ -349,6 +407,16 @@ uint32_t nn::fssrv::sf::IFileSystem::OpenFile(IN uint32_t mode, IN int8_t * path
 	auto tempi = buildInterface(nn::fssrv::sf::IFile, fnPath + "/" + string((char*)path), mode);
 	if(tempi->isOpen) {
 		file = tempi;
+		return 0;
+	} else
+		return 0x7d402;
+}
+
+uint32_t nn::fssrv::sf::IFileSystem::OpenDirectory(IN uint32_t filter, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IDirectory>& dir) {
+	LOG_DEBUG(Fsp, "OpenFile %s", path);
+	auto tempi = buildInterface(nn::fssrv::sf::IDirectory, fnPath + "/" + string((char*)path), filter);
+	if(tempi->isOpen) {
+		dir = tempi;
 		return 0;
 	} else
 		return 0x7d402;
