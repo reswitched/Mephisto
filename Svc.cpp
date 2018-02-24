@@ -201,7 +201,7 @@ tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
 // but this makes it easier to return values from
 // libtransistor tests.
 void Svc::ExitProcess(guint exitCode) {
-	LOG_DEBUG(Svc[0x07], "ExitProcess %ld", exitCode);
+	LOG_DEBUG(Svc[0x07], "ExitProcess 0x" LONGFMT, exitCode);
 	exit((int) exitCode);
 }
 
