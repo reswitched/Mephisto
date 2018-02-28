@@ -36,8 +36,12 @@ void NPipe::messageAsync(shared_ptr<array<uint8_t, 0x100>> buf, function<void(ui
 	acquire();
 	client.wait([=] {
 		auto obuf = client.pop();
-		memcpy(buf->data(), obuf->data(), 0x100);
-		cb(0, false); // XXX: HANDLE RETCODES AND CLOSE
+		if (obuf != nullptr) {
+			memcpy(buf->data(), obuf->data(), 0x100);
+			cb(0, false); // XXX: HANDLE RETCODES
+		} else {
+			cb(0, true);
+		}
 		return 1;
 	});
 	server.push(buf);

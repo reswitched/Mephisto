@@ -14,6 +14,14 @@ protected:
 	uint32_t length;
 };
 
+class Kip : Nxo {
+public:
+	Kip(string fn) : Nxo(fn) {}
+	virtual ~Kip() override {}
+
+	guint load(Ctu &ctu, gptr base, bool relocate=false) override;
+};
+
 class Nso : Nxo {
 public:
 	Nso(string fn) : Nxo(fn) {}
