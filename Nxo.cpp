@@ -118,7 +118,7 @@ guint Kip::load(Ctu &ctu, gptr base, bool relocate) {
 	gptr bssmaxsize = hdr.section_headers[3].out_offset + align(hdr.section_headers[3].out_size, 0x1000);
 
 	gptr maxsize = std::max( { tmaxsize, romaxsize, rwmaxsize, bssmaxsize } );
-	printf("WTF IS THIS: " LONG_FMT "\n", maxsize);
+	printf("WTF IS THIS: " LONGFMT "\n", maxsize);
 	ctu.cpu.map(base, maxsize);
 
 	size_t toff = 0x100;
