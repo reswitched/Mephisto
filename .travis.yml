@@ -7,9 +7,6 @@ matrix:
     - os: osx
       osx_image: xcode9.1
       compiler: clang
-
-
-
 addons:
   apt:
     sources:
@@ -22,17 +19,24 @@ addons:
       - lld-5.0
       - liblz4-dev
 install:
-  -  pip2 install --user -r requirements.txt
+  - pip2 install --user -r requirements.txt
   - git clone https://github.com/reswitched/unicorn.git
   - cd unicorn
   - UNICORN_ARCHS="aarch64" ./make.sh
   - sudo ./make.sh install
   - cd ..
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CC=clang++-5.0; Ld=ld.lld-5.0; fi
-
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then CC=clang++; brew update; brew install lz4; fi
-
-
-
 script: make LD=$Ld CC=$CC
-
+after_success:
+  - mv ctu ctu_$TRAVIS_OS_NAME
+deploy:
+    - provider: releases
+      api_key: $GITHUB_TOKEN
+      file:
+        - "ctu_$TRAVIS_OS_NAME"
+      skip-cleanup: true
+      draft: true
+      tag_name: $TRAVIS_TAG
+      on:
+        tags: true
