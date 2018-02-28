@@ -314,7 +314,7 @@ static_assert(sizeof(DirectoryEntry) == 0x310);
 
 uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t * entries_buf, guint entries_buf_len) {
 	size_t entries_count = entries_buf_len / sizeof(DirectoryEntry);
-	LOG_DEBUG(Fsp, "IDirectory::Read: Attempting to read %zu entries (from %zu)", entries_count, entries_buf_len);
+	LOG_DEBUG(Fsp, "IDirectory::Read: Attempting to read " LONG_FMT " entries (from " LONG_FMT ")", entries_count, entries_buf_len);
 	struct DirectoryEntry *entries = (struct DirectoryEntry*)entries_buf;
 	struct dirent *curdir;
 	struct stat curdir_stat;
@@ -373,7 +373,7 @@ uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
 }
 
 uint32_t nn::fssrv::sf::IFile::Read(IN uint64_t _0, IN uint64_t offset, IN uint32_t size, OUT uint64_t& out_size, OUT int8_t * out_buf, guint out_buf_size) {
-	LOG_DEBUG(Fsp, "IFile::Read from %s from %lu", fn.c_str(), offset);
+	LOG_DEBUG(Fsp, "IFile::Read from %s from " LONG_FMT, fn.c_str(), offset);
 	if(isOpen && fp != nullptr) {
 		uint32_t s = ((uint32_t)out_buf_size < size ? (uint32_t)out_buf_size : size);
 		bufferOffset = offset;
