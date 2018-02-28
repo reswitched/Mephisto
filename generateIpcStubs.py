@@ -358,6 +358,8 @@ def main():
 				print >>fp, '\t\t%s(Ctu *_ctu%s);' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '')
 			else:
 				print >>fp, '\t\t%s(Ctu *_ctu%s) : IpcService(_ctu)%s {}' % (name, ', ' + ', '.join('%s _%s' % (k, v) for k, v in partial[1]) if partial and partial[1] else '', ', ' + ', '.join('%s(_%s)' % (v, v) for k, v in partial[1]) if partial and partial[1] else '')
+			if re.search('(^|[^a-zA-Z0-9:])%s::~%s[^a-zA-Z0-9:]' % (qname, name), allcode):
+				print >>fp, '\t\t~%s();' % name
 			print >>fp, '\t\tuint32_t dispatch(IncomingIpcMessage &req, OutgoingIpcMessage &resp) {'
 			print >>fp, '\t\t\tswitch(req.cmdId) {'
 			for fname, func in sorted(funcs.items(), key=lambda x: x[1]['cmdId']):
