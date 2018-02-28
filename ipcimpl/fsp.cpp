@@ -313,7 +313,7 @@ struct DirectoryEntry {
 static_assert(sizeof(DirectoryEntry) == 0x310);
 
 uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t * entries_buf, guint entries_buf_len) {
-	size_t entries_count = entries_buf_len / sizeof(DirectoryEntry);
+	uint64_t entries_count = entries_buf_len / sizeof(DirectoryEntry);
 	LOG_DEBUG(Fsp, "IDirectory::Read: Attempting to read " LONGFMT " entries (from " LONGFMT ")", entries_count, entries_buf_len);
 	struct DirectoryEntry *entries = (struct DirectoryEntry*)entries_buf;
 	struct dirent *curdir;
