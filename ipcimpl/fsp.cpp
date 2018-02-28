@@ -171,6 +171,28 @@ uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint64_t mode, IN uint32_t si
 	return 0;
 }
 
+uint32_t nn::fssrv::sf::IFileSystem::CreateDirectory(IN int8_t * path, guint path_size) {
+	LOG_DEBUG(Fsp, "Create directory %s", (fnPath+string((char*)path)).c_str());
+	if (mkdir((fnPath+string((char*)path)).c_str(), 0755) == -1)
+		return 0x7d402;
+	return 0;
+}
+
+uint32_t nn::fssrv::sf::IFileSystem::GetEntryType(IN int8_t * path, guint path_size, OUT uint32_t& _1) {
+	LOG_DEBUG(IpcStubs, "GetEntryType for file %s", (fnPath + string((char*)path)).c_str());
+	struct stat path_stat;
+
+	stat((fnPath+string((char*)path)).c_str(), &path_stat);
+	if (S_ISREG(path_stat.st_mode))
+		_1 = 1;
+	else if (S_ISDIR(path_stat.st_mode))
+		_1 = 0;
+	else
+		return 0x271002;
+	return 0;
+}
+
+
 // Funcs
 uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByCurrentProcess(OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _0) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByCurrentProcess");
@@ -317,7 +339,7 @@ uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t
 }
 
 
-/* ---------------------------------------- End of IFileSystem ---------------------------------------- */
+/* ---------------------------------------- End of IDirectory ---------------------------------------- */
 
 /* ---------------------------------------- Start of IFile ---------------------------------------- */
 // Interface
@@ -331,6 +353,10 @@ nn::fssrv::sf::IFile::IFile(Ctu *_ctu, string  _fn, uint32_t  _mode) : IpcServic
 		LOG_DEBUG(Fsp, "FILE NOT FOUND!");
 		isOpen = false;
 	}
+}
+
+nn::fssrv::sf::IFile::~IFile() {
+	fclose((FILE*)fp);
 }
 
 uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
@@ -347,13 +373,16 @@ uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
 }
 
 uint32_t nn::fssrv::sf::IFile::Read(IN uint64_t _0, IN uint64_t offset, IN uint32_t size, OUT uint64_t& out_size, OUT int8_t * out_buf, guint out_buf_size) {
+	LOG_DEBUG(Fsp, "IFile::Read from %s from %lu", fn.c_str(), offset);
 	if(isOpen && fp != nullptr) {
 		uint32_t s = ((uint32_t)out_buf_size < size ? (uint32_t)out_buf_size : size);
 		bufferOffset = offset;
 		fseek((FILE *)fp, offset, SEEK_SET);
-		fread(out_buf, 1, s, (FILE *)fp);
+		size_t s_read = fread(out_buf, 1, s, (FILE *)fp);
 		bufferOffset = ftell((FILE *)fp);
-		out_size = (uint32_t)s;
+		out_size = (uint32_t)s_read;
+	} else {
+		LOG_DEBUG(Fsp, "File is closed !");
 	}
 	return 0x0;
 }
@@ -413,7 +442,7 @@ uint32_t nn::fssrv::sf::IFileSystem::OpenFile(IN uint32_t mode, IN int8_t * path
 }
 
 uint32_t nn::fssrv::sf::IFileSystem::OpenDirectory(IN uint32_t filter, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IDirectory>& dir) {
-	LOG_DEBUG(Fsp, "OpenFile %s", path);
+	LOG_DEBUG(Fsp, "OpenDirectory %s", path);
 	auto tempi = buildInterface(nn::fssrv::sf::IDirectory, fnPath + "/" + string((char*)path), filter);
 	if(tempi->isOpen) {
 		dir = tempi;
