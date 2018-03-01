@@ -20,14 +20,14 @@ addons:
       - liblz4-dev
 install:
   - pip2 install --user -r requirements.txt
-  - git clone https://github.com/reswitched/unicorn.git
-  - cd unicorn
-  - UNICORN_ARCHS="aarch64" ./make.sh
-  - sudo ./make.sh install
-  - cd ..
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CC=clang++-5.0; Ld=ld.lld-5.0; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then CC=clang++; brew update; brew install lz4; fi
-script: make LD=$Ld CC=$CC
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then CXX=clang++-5.0; fi
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      CXX=clang++
+      brew update
+      brew install lz4
+    fi
+script: make CXX=$CXX
 after_success:
   - mv ctu ctu_$TRAVIS_OS_NAME
 deploy:
