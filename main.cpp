@@ -38,7 +38,7 @@ struct Arg: public option::Arg
   }
 };
 
-enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, KIP, ENABLE_SOCKETS };
+enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, KIP, ENABLE_SOCKETS, RELOCATE };
 const option::Descriptor usage[] =
 {
 	{UNKNOWN, 0, "", "",Arg::None, "USAGE: ctu [options] <load-directory>\n\n"
@@ -49,7 +49,8 @@ const option::Descriptor usage[] =
 	{NSO, 0,"","load-nso",Arg::NonEmpty, "  --load-nso  \tLoad an NSO without load directory"},
 	{NRO, 0,"","load-nro",Arg::NonEmpty, "  --load-nro  \tLoad an NRO without load directory (entry point .text+0x80)"},
 	{KIP, 0,"","load-kip",Arg::NonEmpty, "  --load-kip  \tLoad a KIP without load directory"},
-	{ENABLE_SOCKETS, 0, "b","enable-sockets",Arg::None, "  -- enable-sockets, -b  \tEnable BSD socket passthrough." },
+	{ENABLE_SOCKETS, 0, "b","enable-sockets",Arg::None, "  --enable-sockets, -b  \tEnable BSD socket passthrough." },
+	{RELOCATE, 0, "r","relocate",Arg::None, "  --relocate, -r  \tRelocate loaded NRO files" },
 	{0,0,nullptr,nullptr,nullptr,nullptr}
 };
 
@@ -82,10 +83,10 @@ void loadNso(Ctu &ctu, const string &lfn, gptr raddr) {
 	LOG_INFO(NsoLoader, "Loaded %s at " ADDRFMT, lfn.c_str(), ctu.loadbase);
 }
 
-void loadNro(Ctu &ctu, const string &lfn, gptr raddr) {
+void loadNro(Ctu &ctu, const string &lfn, gptr raddr, bool relocate) {
 	assert(exists(lfn));
 	Nro file(lfn);
-	if(file.load(ctu, raddr, true) == 0) {
+	if(file.load(ctu, raddr, relocate) == 0) {
 		LOG_ERROR(NroLoader, "Failed to load %s", lfn.c_str());
 	}
 	ctu.loadbase = min(raddr, ctu.loadbase);
@@ -170,12 +171,17 @@ int main(int argc, char **argv) {
 	} else {
 		ctu.socketsEnabled = false;
 	}
+
+	bool relocate = false;
+	if(options[RELOCATE].count()) {
+		relocate = true;
+	}
 	
 	if(options[NSO].count()) {
 		loadNso(ctu, options[NSO][0].arg, 0x7100000000);
 		ctu.execProgram(0x7100000000);
 	} else if(options[NRO].count()) {
-		loadNro(ctu, options[NRO][0].arg, 0x7100000000);
+		loadNro(ctu, options[NRO][0].arg, 0x7100000000, relocate);
 		ctu.execProgram(0x7100000000);
 	} else if(options[KIP].count()) {
 		loadKip(ctu, options[KIP][0].arg, 0x7100000000);
