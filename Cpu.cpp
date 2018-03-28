@@ -120,7 +120,14 @@ void Cpu::stop() {
 bool Cpu::map(gptr addr, guint size) {
 	CHECKED(uc_mem_map(uc, addr, size, UC_PROT_ALL));
 	auto temp = new uint8_t[size];
-	memset(temp, 0, size);
+	if(ctu->initializeMemory) {
+		uint8_t val[] = "badmem!!";
+		for(size_t sz = 0; sz < size; sz++) {
+			temp[sz] = val[sz % sizeof(val)];
+		}
+	} else {
+		memset(temp, 0, size);
+	}
 	writemem(addr, temp, size);
 	delete[] temp;
 	return true;

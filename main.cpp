@@ -38,7 +38,7 @@ struct Arg: public option::Arg
   }
 };
 
-enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, KIP, ENABLE_SOCKETS, RELOCATE };
+enum  optionIndex { UNKNOWN, HELP, ENABLE_GDB, PORT, NSO, NRO, KIP, ENABLE_SOCKETS, RELOCATE, INITIALIZE_MEMORY };
 const option::Descriptor usage[] =
 {
 	{UNKNOWN, 0, "", "",Arg::None, "USAGE: ctu [options] <load-directory>\n\n"
@@ -51,6 +51,7 @@ const option::Descriptor usage[] =
 	{KIP, 0,"","load-kip",Arg::NonEmpty, "  --load-kip  \tLoad a KIP without load directory"},
 	{ENABLE_SOCKETS, 0, "b","enable-sockets",Arg::None, "  --enable-sockets, -b  \tEnable BSD socket passthrough." },
 	{RELOCATE, 0, "r","relocate",Arg::None, "  --relocate, -r  \tRelocate loaded NRO files" },
+	{INITIALIZE_MEMORY, 0, "m", "initialize-memory", Arg::None, "  --initialize-memory, -m  \tInitialize memory to help catch uninitialized memory bugs" },
 	{0,0,nullptr,nullptr,nullptr,nullptr}
 };
 
@@ -172,6 +173,8 @@ int main(int argc, char **argv) {
 		ctu.socketsEnabled = false;
 	}
 
+	ctu.initializeMemory = options[INITIALIZE_MEMORY].count() > 0;
+	
 	bool relocate = false;
 	if(options[RELOCATE].count()) {
 		relocate = true;

@@ -214,7 +214,8 @@ public:
 	gptr loadbase, loadsize;
 
 	bool socketsEnabled;
-
+	bool initializeMemory = false;
+	
 private:
 	ghandle handleId;
 	unordered_map<ghandle, shared_ptr<KObject>> handles;
