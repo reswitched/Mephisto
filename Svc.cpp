@@ -178,7 +178,7 @@ tuple<guint, guint> Svc::QueryMemory(gptr meminfo, gptr pageinfo, gptr addr) {
 			minfo.size = end - begin + 1;
 			minfo.memory_type = perm == -1 ? 0 : 3; // FREE or CODE
 			minfo.memory_attribute = 0;
-			if(addr >= 0xaa0000000 && addr <= 0xaa0000000 + ctu->heapsize) {
+			if(addr >= 0xaa0000000 && addr < 0xaa0000000 + ctu->heapsize) {
 				minfo.memory_type = 5; // HEAP
 			}
 			minfo.permission = 0;
