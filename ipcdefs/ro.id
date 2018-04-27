@@ -1,0 +1,7 @@
+interface nn::ro::detail::IRoInterface {
+	[0] LoadNro(u64 pid_placeholder, u64 nro_image_addr, u64 nro_size, u64 bss_addr, u64 bss_size, pid) -> u64 nro_load_addr;
+	[1] UnloadNro(u64 pid_placeholder, u64 nro_load_addr, pid);
+	[2] LoadNrr(u64 pid_placeholder, u64 nrr_addr, u64 nrr_size, pid);
+	[3] UnloadNrr(u64 pid_placeholder, u64 nrr_addr, pid);
+	[4] Initialize(u64 pid_placeholder, pid, KObject process);
+}
