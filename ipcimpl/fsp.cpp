@@ -356,7 +356,9 @@ nn::fssrv::sf::IFile::IFile(Ctu *_ctu, string  _fn, uint32_t  _mode) : IpcServic
 }
 
 nn::fssrv::sf::IFile::~IFile() {
-	fclose((FILE*)fp);
+	if(isOpen) {
+		fclose((FILE*)fp);
+	}
 }
 
 uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
