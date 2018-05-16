@@ -105,6 +105,8 @@ Svc::Svc(Ctu *_ctu) : ctu(_ctu) {
 	registerSvc_ret_X0(       0x26, Break, IX0, IX1, IX2);
 	registerSvc_ret_X0(       0x27, OutputDebugString, IX0, IX1);
 	registerSvc_ret_X0_X1(    0x29, GetInfo, IX1, (ghandle) IX2, IX3);
+	registerSvc_ret_X0(       0x2C, MapPhysicalMemory, IX0, IX1);
+	registerSvc_ret_X0(       0x2D, UnmapPhysicalMemory, IX0, IX1);
 	registerSvc_ret_X0_X1_X2( 0x40, CreateSession, (ghandle) IX0, (ghandle) IX1, IX2);
 	registerSvc_ret_X0_X1(    0x41, AcceptSession, (ghandle) IX1);
 	registerSvc_ret_X0_X1(    0x43, ReplyAndReceive, IX1, IX2, (ghandle) IX3, IX4);
@@ -537,6 +539,17 @@ tuple<guint, guint> Svc::GetInfo(guint id1, ghandle handle, guint id2) {
 	matchone(11, 0);
 
 	LOG_ERROR(Svc[0x29], "Unknown getinfo");
+}
+
+guint Svc::MapPhysicalMemory(gptr addr, guint size) {
+	LOG_DEBUG(Svc[0x2C], "MapPhysicalMemory(0x" LONGFMT ", 0x" LONGFMT ")", addr, size);
+	ctu->cpu.map(addr, size);
+	return 0;
+}
+
+guint Svc::UnmapPhysicalMemory(gptr addr, guint size) {
+	ctu->cpu.unmap(addr, size);
+	return 0;
 }
 
 tuple<guint, guint, guint> Svc::CreateSession(ghandle clientOut, ghandle serverOut, guint unk) {

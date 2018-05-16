@@ -58,6 +58,8 @@ private:
 	guint Break(guint X0, guint X1, guint info); // 0x26
 	guint OutputDebugString(guint ptr, guint size); // 0x27
 	tuple<guint, guint> GetInfo(guint id1, ghandle handle, guint id2); // 0x29
+	guint MapPhysicalMemory(gptr addr, guint size); // 0x2C
+	guint UnmapPhysicalMemory(gptr addr, guint size); // 0x2D
 	tuple<guint, guint, guint> CreateSession(ghandle clientOut, ghandle serverOut, guint unk); // 0x40
 	tuple<guint, guint> AcceptSession(ghandle port); // 0x41
 	tuple<guint, guint> ReplyAndReceive(gptr handles, guint numHandles, ghandle replySession, guint timeout); // 0x43
