@@ -538,7 +538,7 @@ tuple<guint, guint> Svc::GetInfo(guint id1, ghandle handle, guint id2) {
 	matchpair(18, 0, 0x0100000000000036); // Title ID
 	matchone(11, 0);
 
-	LOG_ERROR(Svc[0x29], "Unknown getinfo");
+	return make_tuple(0xf001, 0);
 }
 
 guint Svc::MapPhysicalMemory(gptr addr, guint size) {
