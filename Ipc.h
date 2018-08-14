@@ -244,13 +244,15 @@ protected:
 class IUnknown : public IpcService {
 };
 
-class SmService;
+namespace nn::sm::detail {
+	class IUserInterface;
+}
 
 class Ipc {
 public:
 	Ipc(Ctu *_ctu);
 	ghandle ConnectToPort(string name);
-	shared_ptr<SmService> sm;
+	shared_ptr<nn::sm::detail::IUserInterface> sm;
 private:
 	Ctu *ctu;
 };

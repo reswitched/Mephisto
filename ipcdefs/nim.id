@@ -1,9 +1,0 @@
-interface nn::nim::detail::INetworkInstallManager is nim {
-	[2] Unknown2(buffer<unknown, 6, 0x200>) -> (u64, u64);
-	[8] Unknown8() -> (u64, u64);
-	[40] Unknown40(buffer<unknown, 6, 0x200>) -> (u64, u64);
-}
-
-interface nn::nim::detail::IShopServiceManager is nim:shp {
-	
-}

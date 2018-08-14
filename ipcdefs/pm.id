@@ -1,9 +1,0 @@
-interface Pm::Shell is pm:shell {
-	[0] LaunchTitle(u64, nn::ApplicationId tid);
-	[3] GetProcessEventWaiter() -> KObject;
-}
-
-interface Pm::Bm is pm:bm {
-	[0] Init() -> (u64);
-	[1] EnableMaintenanceMode();
-}

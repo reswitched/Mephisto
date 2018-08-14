@@ -3,8 +3,6 @@
 *.pch
 ctu
 membundle.bin
-ipcdefs/auto.id
-ipcdefs/cache
 IpcStubs.h
 SwitchFS/syssave*
 SwitchFS/sdcard

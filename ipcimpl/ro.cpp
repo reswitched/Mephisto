@@ -7,7 +7,7 @@ partial nn::ro::detail::IRoInterface {
 }
 */
 
-uint32_t nn::ro::detail::IRoInterface::Initialize(IN uint64_t pid_placeholder, IN gpid _1, IN shared_ptr<KObject> process) {
+uint32_t nn::ro::detail::IRoInterface::Unknown4(IN uint64_t pid_placeholder, IN gpid _1, IN shared_ptr<KObject> process) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::ro::detail::IRoInterface::Initialize");
 	return 0;
 }
@@ -50,7 +50,7 @@ class nn::ro::detail::IRoInterface::GuestNro {
 };
 gptr nn::ro::detail::IRoInterface::GuestNro::target_address = 0x7800000000;
 	
-uint32_t nn::ro::detail::IRoInterface::LoadNro(IN uint64_t pid_placeholder, IN uint64_t nro_image_addr, IN uint64_t nro_size, IN uint64_t bss_addr, IN uint64_t bss_size, IN gpid _5, OUT uint64_t& nro_load_addr) {
+uint32_t nn::ro::detail::IRoInterface::Unknown0(IN uint64_t pid_placeholder, IN uint64_t nro_image_addr, IN uint64_t nro_size, IN uint64_t bss_addr, IN uint64_t bss_size, IN gpid _5, OUT uint64_t& nro_load_addr) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::ro::detail::IRoInterface::LoadNro");
 
 	GuestNro *nro = new GuestNro(ctu, nro_image_addr, bss_addr, nro_size, bss_size);
@@ -59,18 +59,18 @@ uint32_t nn::ro::detail::IRoInterface::LoadNro(IN uint64_t pid_placeholder, IN u
 	return 0;
 }
 
-uint32_t nn::ro::detail::IRoInterface::LoadNrr(IN uint64_t pid_placeholder, IN uint64_t nrr_addr, IN uint64_t nrr_size, IN gpid _3) {
+uint32_t nn::ro::detail::IRoInterface::Unknown2(IN uint64_t pid_placeholder, IN uint64_t nrr_addr, IN uint64_t nrr_size, IN gpid _3) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::ro::detail::IRoInterface::LoadNrr");
 	return 0;
 }
 
-uint32_t nn::ro::detail::IRoInterface::UnloadNro(IN uint64_t pid_placeholder, IN uint64_t nro_load_addr, IN gpid _2) {
+uint32_t nn::ro::detail::IRoInterface::Unknown1(IN uint64_t pid_placeholder, IN uint64_t nro_load_addr, IN gpid _2) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::ro::detail::IRoInterface::UnloadNro");
 	delete nroMap[nro_load_addr];
 	return 0;
 }
 
-uint32_t nn::ro::detail::IRoInterface::UnloadNrr(IN uint64_t pid_placeholder, IN uint64_t nrr_addr, IN gpid _2) {
+uint32_t nn::ro::detail::IRoInterface::Unknown3(IN uint64_t pid_placeholder, IN uint64_t nrr_addr, IN gpid _2) {
 	LOG_DEBUG(IpcStubs, "Stub implementation for nn::ro::detail::IRoInterface::UnloadNrr");
 	return 0;
 }

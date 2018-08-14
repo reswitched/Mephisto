@@ -1,10 +1,16 @@
 import glob, hashlib, json, os, os.path, re, sys
 from pprint import pprint
-import idparser, partialparser
+from SwIPC import idparser
+import partialparser
 from cStringIO import StringIO
 
 def emitInt(x):
 	return '0x%x' % x if x > 9 else str(x)
+
+handlemap = dict(
+	session='IPipe',
+	port='NPort',
+)
 
 typemap = dict(
 	i8='int8_t', 
@@ -92,7 +98,10 @@ def formatParam(param, input, i):
 	elif spec[0] == 'object':
 		type = 'shared_ptr<%s>' % spec[1][0]
 	elif spec[0] == 'KObject':
-		type = 'shared_ptr<KObject>'
+		if len(spec) >= 2 and spec[2][0] in handlemap:
+			type = 'shared_ptr<%s>' % handlemap[spec[2][0]]
+		else:
+			type = 'shared_ptr<KObject>'
 	else:
 		type = typemap[spec[0]] if spec[0] in typemap else spec[0]
 
@@ -114,6 +123,8 @@ def isPointerType(type):
 		return True
 	elif type[0] in allTypes:
 		return isPointerType(allTypes[type[0]])
+	elif type[0] == 'struct':
+		return False
 	return True
 
 INIT = 'INIT'
@@ -155,9 +166,11 @@ def generateCaller(qname, fname, func):
 			logElems.append('req.getMoved(%i)' % objOff)
 			objOff += 1
 		elif type == 'KObject':
-			params.append('ctu->getHandle<KObject>(req.getCopied(%i))' % hndOff)
+			handle_operation =  rest[0][0] if len(rest) > 0 else 'copy'
+			req_function = 'getMoved' if handle_operation == 'move' else 'getCopied'
+			params.append('ctu->getHandle<KObject>(req.%s(%i))' % (req_function, hndOff))
 			logFmt.append('KObject %s= 0x%%x' % ('%s ' % name if name else ''))
-			logElems.append('req.getCopied(%i)' % hndOff)
+			logElems.append('req.%s(%i)' % (req_function, hndOff))
 			hndOff += 1
 		elif type == 'pid':
 			params.append('req.pid')
@@ -175,7 +188,7 @@ def generateCaller(qname, fname, func):
 				logElems.append('bufferToString(req.getDataPointer<uint8_t *>(%s), %s).c_str()' % (emitInt(inpOffset), emitInt(typeSize(elem))))
 			else:
 				params.append('req.getData<%s>(%s)' % (retype(elem), emitInt(inpOffset)))
-				if typeSize(elem) == 16:
+				if typeSize(elem) == 16 or elem[0] not in typesizes:
 					logFmt.append('%s %s= %%s' % (retype(elem), '%s ' % name if name else ''))
 					logElems.append('bufferToString(req.getDataPointer<uint8_t *>(%s), %s).c_str()' % (emitInt(inpOffset), emitInt(typeSize(elem))))
 				else:
@@ -216,12 +229,22 @@ def generateCaller(qname, fname, func):
 			yield AFTER, '\tresp.move(%i, createHandle(%s));' % (objOff, tn)
 			objOff += 1
 		elif type == 'KObject':
+			handle_operation =  rest[0][0] if len(rest) > 0 else 'copy'
+			resp_function = 'move' if handle_operation == 'move' else 'copy'
+			handle_creation_fnction = 'createHandle' if handle_operation == 'move' else 'ctu->newHandle'
 			tn = tempname()
-			yield 'shared_ptr<KObject> %s;' % tn
+			if len(rest) > 1 and rest[1][0] in handlemap:
+				definition = 'shared_ptr<%s>' % handlemap[rest[1][0]]
+			else:
+				definition = 'shared_ptr<KObject>'
+			yield '%s %s;' % (definition, tn)
 			params.append(tn)
 			yield AFTER, 'if(%s != nullptr)' % tn
-			yield AFTER, '\tresp.copy(%i, ctu->newHandle(%s));' % (hndOff, tn)
-			hndOff += 1
+			yield AFTER, '\tresp.%s(%i, %s(%s));' % (resp_function, hndOff, handle_creation_fnction, tn)
+			if resp_function == 'move':
+				objOff += 1
+			else:
+				hndOff += 1
 		elif type == 'pid':
 			assert False
 		else:
@@ -289,13 +312,13 @@ def uniqInt(*args):
 def main():
 	global allTypes
 
-	fns = ['ipcdefs/auto.id'] + [x for x in glob.glob('ipcdefs/*.id') if x != 'ipcdefs/auto.id']
+	fns = ['SwIPC/ipcdefs/auto.id'] + [x for x in glob.glob('SwIPC/ipcdefs/*.id') if x != 'SwIPC/ipcdefs/auto.id']
  
-	if os.path.exists('ipcdefs/cache') and all(os.path.getmtime('ipcdefs/cache') > os.path.getmtime(x) for x in fns):
-		res = json.load(file('ipcdefs/cache'))
+	if os.path.exists('SwIPC/ipcdefs/cache') and all(os.path.getmtime('SwIPC/ipcdefs/cache') > os.path.getmtime(x) for x in fns):
+		res = json.load(file('SwIPC/ipcdefs/cache'))
 	else:
 		res = idparser.parse('\n'.join(file(fn).read() for fn in fns))
-		with file('ipcdefs/cache', 'w') as fp:
+		with file('SwIPC/ipcdefs/cache', 'w') as fp:
 			json.dump(res, fp)
 	types, ifaces, services = res
 
@@ -308,8 +331,14 @@ def main():
 
 	for ns, types in typesByNs.items():
 		for name, spec in sorted(types.items(), key=lambda x: x[0]):
-			retyped, plain = retype(spec, noIndex=True), retype(spec)
-			namespaces[ns].append('using %s = %s;%s' % (name, retyped, ' // ' + plain if retyped != plain else ''))
+			if spec[0] == 'struct':
+				namespaces[ns].append('using %s = struct {' % (name))
+				for sub_spec in spec[1:][0]:
+					namespaces[ns].append('\t%s %s;' % (retype(sub_spec[1]), sub_spec[0]))
+				namespaces[ns].append('};')
+			else:
+				retyped, plain = retype(spec, noIndex=True), retype(spec)
+				namespaces[ns].append('using %s = %s;%s' % (name, retyped, ' // ' + plain if retyped != plain else ''))
 
 	for ns, ifaces in ifacesByNs.items():
 		for name in sorted(ifaces.keys()):
@@ -362,15 +391,16 @@ def main():
 				print >>fp, '\t\t~%s();' % name
 			print >>fp, '\t\tuint32_t dispatch(IncomingIpcMessage &req, OutgoingIpcMessage &resp) {'
 			print >>fp, '\t\t\tswitch(req.cmdId) {'
-			for fname, func in sorted(funcs.items(), key=lambda x: x[1]['cmdId']):
-				print >>fp, '\t\t\tcase %i: {' % func['cmdId'];
-				print >>fp, '\n'.join('\t\t\t\t' + x for x in reorder(generateCaller(qname, fname, func)))
+			for func in sorted(funcs['cmds'], key=lambda x: x['cmdId']):
+				print >>fp, '\t\t\tcase %i: {' % func['cmdId']
+				print >>fp, '\n'.join('\t\t\t\t' + x for x in reorder(generateCaller(qname, func['name'], func)))
 				print >>fp, '\t\t\t}'
 			print >>fp, '\t\t\tdefault:'
 			print >>fp, '\t\t\t\tLOG_ERROR(IpcStubs, "Unknown message cmdId %%u to interface %s", req.cmdId);' % ('%s::%s' % (ns, name) if ns else name)
 			print >>fp, '\t\t\t}'
 			print >>fp, '\t\t}'
-			for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
+			for func in sorted(funcs['cmds'], key=lambda x: x['name']):
+				fname = func['name']
 				implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
 				print >>fp, '\t\tuint32_t %s(%s);' % (fname, generatePrototype(func))
 			if partial:
@@ -383,7 +413,8 @@ def main():
 		for name, funcs in sorted(ifaces.items(), key=lambda x: x[0]):
 			qname = '%s::%s' % (ns, name) if ns else name
 			partial = partials[qname] if qname in partials else None
-			for fname, func in sorted(funcs.items(), key=lambda x: x[0]):
+			for func in sorted(funcs['cmds'], key=lambda x: x['name']):
+				fname = func['name']
 				implemented = re.search('[^a-zA-Z0-9:]%s::%s[^a-zA-Z0-9:]' % (qname, fname), allcode)
 				if not implemented:
 					print >>fp, 'uint32_t %s::%s(%s) {' % (qname, fname, generatePrototype(func))

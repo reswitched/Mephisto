@@ -1,4 +1,0 @@
-interface nn::ro::detail::ILdrShellInterface is ldr:shel {
-	[0] AddProcessToLaunchQueue(buffer<unknown, 0x19, 0x200>, u32 size, nn::ncm::ApplicationId appID);
-	[1] ClearLaunchQueue();
-}

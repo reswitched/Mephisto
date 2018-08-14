@@ -1,8 +1,0 @@
-interface nn::lm::ILogService is lm {
-	[0] Initialize(u64, pid) -> object<nn::lm::ILogger> Log;
-}
-
-interface nn::lm::ILogger {
-	[0] Log(buffer<u8, 0x21, 0> message);
-	[1] Unknown1(u32);
-}

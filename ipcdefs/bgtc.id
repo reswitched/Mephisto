@@ -1,8 +1,0 @@
-interface nn::bgtc::IStateControlService is bgtc:sc {
-}
-
-interface nn::bgtc::ITaskService is bgtc:t {
-	[3] Unknown3() -> KObject;
-	[5] Unknown5(buffer<unknown, 9, 0>);
-	[14] Unknown14() -> KObject;
-}

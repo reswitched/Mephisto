@@ -162,7 +162,7 @@ uint32_t nn::fssrv::sf::IFileSystem::DeleteFile(IN int8_t * path, guint path_siz
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint64_t mode, IN uint32_t size, IN int8_t * path, guint path_size) {
+uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint32_t mode, IN uint64_t size, IN int8_t * path, guint path_size) {
 	LOG_DEBUG(Fsp, "Create file %s", (fnPath+string((char*)path)).c_str());
 	FILE *fp = fopen((fnPath+string((char*)path)).c_str(), "wb");
 	if(!fp)
@@ -374,26 +374,26 @@ uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFile::Read(IN uint64_t _0, IN uint64_t offset, IN uint32_t size, OUT uint64_t& out_size, OUT int8_t * out_buf, guint out_buf_size) {
+uint32_t nn::fssrv::sf::IFile::Read(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, OUT uint64_t& out_size, OUT int8_t * out_buf, guint out_buf_size) {
 	LOG_DEBUG(Fsp, "IFile::Read from %s from " LONGFMT, fn.c_str(), offset);
 	if(isOpen && fp != nullptr) {
-		uint32_t s = ((uint32_t)out_buf_size < size ? (uint32_t)out_buf_size : size);
+		uint64_t s = ((uint64_t)out_buf_size < size ? (uint64_t)out_buf_size : size);
 		bufferOffset = offset;
 		fseek((FILE *)fp, offset, SEEK_SET);
 		size_t s_read = fread(out_buf, 1, s, (FILE *)fp);
 		bufferOffset = ftell((FILE *)fp);
-		out_size = (uint32_t)s_read;
+		out_size = (uint64_t)s_read;
 	} else {
 		LOG_DEBUG(Fsp, "File is closed !");
 	}
 	return 0x0;
 }
 
-uint32_t nn::fssrv::sf::IFile::Write(IN uint64_t _0, IN uint64_t offset, IN uint32_t size, IN int8_t * buf, guint buf_size) {
+uint32_t nn::fssrv::sf::IFile::Write(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, IN int8_t * buf, guint buf_size) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFile::Write");
 	if(isOpen && fp != nullptr) {
 		bufferOffset = offset;
-		uint32_t s = ((uint32_t)buf_size < size ? (uint32_t)buf_size : size);
+		uint64_t s = ((uint64_t)buf_size < size ? (uint64_t)buf_size : size);
 		fseek((FILE *)fp, offset, SEEK_SET);
 		fwrite(buf, 1, s, (FILE *)fp);
 		if(size-s > 0) {

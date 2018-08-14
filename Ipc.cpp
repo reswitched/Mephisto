@@ -239,7 +239,7 @@ ghandle IpcService::fauxNewHandle(shared_ptr<KObject> obj) {
 }
 
 Ipc::Ipc(Ctu *_ctu) : ctu(_ctu) {
-	sm = make_shared<SmService>(ctu);
+	sm = make_shared<nn::sm::detail::IUserInterface>(ctu);
 }
 
 ghandle Ipc::ConnectToPort(string name) {
