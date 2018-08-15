@@ -67,13 +67,15 @@ def splitByNs(obj):
 		ons[ns][name] = x
 	return ons
 
-def retype(spec, noIndex=False):
+def retype(spec, noIndex=False, forStruct=False):
 	if spec[0] == 'unknown':
 		return 'uint8_t'
 	elif spec[0] == 'bytes':
+		if forStruct:
+			return 'uint8_t'
 		return 'uint8_t%s' % ('[%s]' % emitInt(spec[1]) if not noIndex else ' *')
 	else:
-		return typemap[spec[0]] if spec[0] in typemap else spec[0];
+		return typemap[spec[0]] if spec[0] in typemap else spec[0]
 
 def formatParam(param, input, i):
 	name, spec = param
@@ -334,7 +336,10 @@ def main():
 			if spec[0] == 'struct':
 				namespaces[ns].append('using %s = struct {' % (name))
 				for sub_spec in spec[1:][0]:
-					namespaces[ns].append('\t%s %s;' % (retype(sub_spec[1]), sub_spec[0]))
+					extra_data =  ''
+					if sub_spec[1][0] == 'bytes':
+						extra_data = '[%s]' % emitInt(sub_spec[1][1])
+					namespaces[ns].append('\t%s %s%s;' % (retype(sub_spec[1], forStruct=True), sub_spec[0], extra_data))
 				namespaces[ns].append('};')
 			else:
 				retyped, plain = retype(spec, noIndex=True), retype(spec)
