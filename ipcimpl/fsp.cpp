@@ -60,7 +60,7 @@ uint32_t nn::fssrv::sf::IStorage::GetSize(OUT uint64_t& size) {
 	LOG_DEBUG(Fsp, "Failed to get file size!");
 	return 0;
 }
-uint32_t nn::fssrv::sf::IStorage::Read(IN uint64_t offset, IN uint64_t length, OUT int8_t * buffer, guint buffer_size) {
+uint32_t nn::fssrv::sf::IStorage::Read(IN uint64_t offset, IN uint64_t length, OUT uint8_t * buffer, guint buffer_size) {
 	if(isOpen && fp != nullptr) {
 		uint32_t s = ((uint32_t)buffer_size < (uint32_t)length ? (uint32_t)buffer_size : (uint32_t)length);
 		bufferOffset = offset;
@@ -87,7 +87,7 @@ uint32_t nn::fssrv::sf::IStorage::SetSize(IN uint64_t size) {
 	}
 	return 0;
 }
-uint32_t nn::fssrv::sf::IStorage::Write(IN uint64_t offset, IN uint64_t length, IN int8_t * data, guint data_size) {
+uint32_t nn::fssrv::sf::IStorage::Write(IN uint64_t offset, IN uint64_t length, IN uint8_t * data, guint data_size) {
 	if(isOpen && fp != nullptr) {
 		bufferOffset = offset;
 		uint32_t s = ((uint32_t)data_size < (uint32_t)length ? (uint32_t)data_size : (uint32_t)length);
@@ -106,19 +106,21 @@ uint32_t nn::fssrv::sf::IStorage::Write(IN uint64_t offset, IN uint64_t length, 
 }
 
 // Funcs
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenBisPartition(IN nn::fssrv::sf::Partition partitionID, OUT shared_ptr<nn::fssrv::sf::IStorage>& BisPartition) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenBisPartition");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenBisStorage(IN nn::fssrv::sf::Partition partitionID, OUT shared_ptr<nn::fssrv::sf::IStorage>& BisPartition) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenBisStorage");
 	BisPartition = buildInterface(nn::fssrv::sf::IStorage, "bis.istorage");
 	return 0x0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByApplicationId(IN nn::ApplicationId tid, OUT shared_ptr<nn::fssrv::sf::IStorage>& dataStorage) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByApplicationId 0x" ADDRFMT, tid);
+#if TARGET_VERSION >= VERSION_3_0_0
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByProgramId(IN nn::ApplicationId tid, OUT shared_ptr<nn::fssrv::sf::IStorage>& dataStorage) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByProgramId 0x" ADDRFMT, tid);
 	std::stringstream ss;
 	ss << "tid_archives_" << hex << tid << ".istorage";
 	dataStorage = buildInterface(nn::fssrv::sf::IStorage, ss.str());
 	return 0;
 }
+#endif
 
 uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByCurrentProcess(OUT shared_ptr<nn::fssrv::sf::IStorage>& dataStorage) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByCurrentProcess");
@@ -127,22 +129,23 @@ uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByCurrentProcess(OUT sh
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByDataId(IN nn::ApplicationId tid, IN uint8_t storageId, OUT shared_ptr<nn::fssrv::sf::IStorage>& dataStorage) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByDataId 0x" ADDRFMT, 0x0100000000000800+(uint64_t)storageId);
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByDataId(IN uint8_t storageId, IN nn::ApplicationId tid, OUT shared_ptr<nn::fssrv::sf::IStorage>& dataStorage) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataStorageByDataId 0x" ADDRFMT, tid);
 	std::stringstream ss;
-	ss << "archives/" << hex << setw(16) << setfill('0') << 0x0100000000000800+(uint64_t)storageId << ".istorage";
+	ss << "archives/" << hex << setw(16) << setfill('0') << tid << ".istorage";
+	
 	dataStorage = buildInterface(nn::fssrv::sf::IStorage, ss.str());
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenGameCardPartition(IN nn::fssrv::sf::Partition partitionID, IN uint32_t _1, OUT shared_ptr<nn::fssrv::sf::IStorage>& gameCardFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenGameCardPartition");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenGameCardStorage(IN nn::fssrv::sf::Partition partitionID, IN uint32_t _1, OUT shared_ptr<nn::fssrv::sf::IStorage>& gameCardFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenGameCardStorage");
 	gameCardFs = buildInterface(nn::fssrv::sf::IStorage, "GamePartition.istorage");
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenRomStorage(OUT shared_ptr<nn::fssrv::sf::IStorage>& _0) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenRomStorage");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenPatchDataStorageByCurrentProcess(OUT shared_ptr<nn::fssrv::sf::IStorage>& _0) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenPatchDataStorageByCurrentProcess");
 	_0 = buildInterface(nn::fssrv::sf::IStorage, "RomStorage.istorage");
 	return 0;
 }
@@ -156,13 +159,13 @@ nn::fssrv::sf::IFileSystem::IFileSystem(Ctu *_ctu, string  _fnPath) : IpcService
 	LOG_DEBUG(Fsp, "Open path %s", fnPath.c_str());
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::DeleteFile(IN int8_t * path, guint path_size) {
+uint32_t nn::fssrv::sf::IFileSystem::DeleteFile(IN uint8_t * path, guint path_size) {
 	LOG_DEBUG(Fsp, "Delete file %s", (fnPath+string((char*)path)).c_str());
 	remove((fnPath+string((char*)path)).c_str());
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint32_t mode, IN uint64_t size, IN int8_t * path, guint path_size) {
+uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint32_t mode, IN uint64_t size, IN uint8_t * path, guint path_size) {
 	LOG_DEBUG(Fsp, "Create file %s", (fnPath+string((char*)path)).c_str());
 	FILE *fp = fopen((fnPath+string((char*)path)).c_str(), "wb");
 	if(!fp)
@@ -171,22 +174,22 @@ uint32_t nn::fssrv::sf::IFileSystem::CreateFile(IN uint32_t mode, IN uint64_t si
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::CreateDirectory(IN int8_t * path, guint path_size) {
+uint32_t nn::fssrv::sf::IFileSystem::CreateDirectory(IN uint8_t * path, guint path_size) {
 	LOG_DEBUG(Fsp, "Create directory %s", (fnPath+string((char*)path)).c_str());
 	if (mkdir((fnPath+string((char*)path)).c_str(), 0755) == -1)
 		return 0x7d402;
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::GetEntryType(IN int8_t * path, guint path_size, OUT uint32_t& _1) {
+uint32_t nn::fssrv::sf::IFileSystem::GetEntryType(IN uint8_t * path, guint path_size, OUT nn::fssrv::sf::DirectoryEntryType& _1) {
 	LOG_DEBUG(IpcStubs, "GetEntryType for file %s", (fnPath + string((char*)path)).c_str());
 	struct stat path_stat;
 
 	stat((fnPath+string((char*)path)).c_str(), &path_stat);
 	if (S_ISREG(path_stat.st_mode))
-		_1 = 1;
+		_1 = File;
 	else if (S_ISDIR(path_stat.st_mode))
-		_1 = 0;
+		_1 = Directory;
 	else
 		return 0x271002;
 	return 0;
@@ -194,95 +197,111 @@ uint32_t nn::fssrv::sf::IFileSystem::GetEntryType(IN int8_t * path, guint path_s
 
 
 // Funcs
+#if TARGET_VERSION == VERSION_1_0_0
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenFileSystem(IN nn::fssrv::sf::FileSystemType filesystem_type, IN nn::ApplicationId tid, IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenFileSystem");
+	contentFs = buildInterface(nn::fssrv::sf::IFileSystem, "");
+	return 0;
+}
+#endif
+
 uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByCurrentProcess(OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _0) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByCurrentProcess");
 	_0 = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountContent7(IN nn::ApplicationId tid, IN uint32_t ncaType, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _2) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountContent7");
+#if TARGET_VERSION >= VERSION_2_0_0
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenFileSystemWithPatch(IN nn::fssrv::sf::FileSystemType filesystem_type, IN nn::ApplicationId tid, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _2) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenFileSystemWithPatch");
 	_2 = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
+#endif
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountContent(IN nn::ApplicationId tid, IN uint32_t flag, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountContent");
+#if TARGET_VERSION >= VERSION_2_0_0
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenFileSystemWithId(IN nn::fssrv::sf::FileSystemType filesystem_type, IN nn::ApplicationId tid, IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenFileSystemWithId");
 	contentFs = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
+#endif
 
+#if TARGET_VERSION >= VERSION_3_0_0
 uint32_t nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByApplicationId(IN nn::ApplicationId tid, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& dataFiles) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenDataFileSystemByApplicationId");
 	dataFiles = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
+#endif
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountBis(IN nn::fssrv::sf::Partition partitionID, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& Bis) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountBis");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenBisFileSystem(IN nn::fssrv::sf::Partition partitionID, IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& Bis) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenBisFileSystem");
 	Bis = buildInterface(nn::fssrv::sf::IFileSystem, string("BIS/") + to_string(partitionID));
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenHostFileSystemImpl(IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _1) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenHostFileSystemImpl");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenHostFileSystem(IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& _1) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenHostFileSystem");
 	_1 = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountSdCard(OUT shared_ptr<nn::fssrv::sf::IFileSystem>& sdCard) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountSdCard");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSdCardFileSystem(OUT shared_ptr<nn::fssrv::sf::IFileSystem>& sdCard) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenSdCardFileSystem");
 	sdCard = buildInterface(nn::fssrv::sf::IFileSystem, "SDCard");
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountGameCardPartition(IN uint32_t _0, IN uint32_t _1, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& gameCardPartitionFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountGameCardPartition");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenGameCardFileSystem(IN uint32_t _0, IN uint32_t _1, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& gameCardPartitionFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenGameCardFileSystem");
 	gameCardPartitionFs = buildInterface(nn::fssrv::sf::IFileSystem, "GameCard");
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountSaveData(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& saveDataFs) {
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSaveDataFileSystem(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& saveDataFs) {
 	uint64_t tid = *(uint64_t *)(&saveStruct[0x18]);
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountSaveData 0x" ADDRFMT, tid);
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenSaveDataFileSystem 0x" ADDRFMT, tid);
 	std::stringstream ss;
 	ss << "save_" << hex << tid;
 	saveDataFs = buildInterface(nn::fssrv::sf::IFileSystem, ss.str());
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountSystemSaveData(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& systemSaveDataFs) {
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSaveDataFileSystemBySystemSaveDataId(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& systemSaveDataFs) {
 	uint64_t tid = *(uint64_t *)(&saveStruct[0x18]);
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountSystemSaveData 0x" ADDRFMT, tid);
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenSaveDataFileSystemBySystemSaveDataId 0x" ADDRFMT, tid);
 	std::stringstream ss;
 	ss << "syssave_" << hex << tid;
 	systemSaveDataFs = buildInterface(nn::fssrv::sf::IFileSystem, ss.str());
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountSaveDataReadOnly(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& saveDataFs) {
+#if TARGET_VERSION >= VERSION_2_0_0
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenReadOnlySaveDataFileSystem(IN uint8_t input, IN nn::fssrv::sf::SaveStruct saveStruct, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& saveDataFs) {
 	uint64_t tid = *(uint64_t *)(&saveStruct[0x18]);
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountSaveDataReadOnly 0x" ADDRFMT, tid);
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenReadOnlySaveDataFileSystem 0x" ADDRFMT, tid);
 	std::stringstream ss;
 	ss << "save_" << hex << tid;
 	saveDataFs = buildInterface(nn::fssrv::sf::IFileSystem, ss.str());
 	return 0;
 }
+#endif
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountImageDirectory(IN uint32_t _0, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& imageFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountImageDirectory");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenImageDirectoryFileSystem(IN uint32_t _0, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& imageFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenImageDirectoryFileSystem");
 	imageFs = buildInterface(nn::fssrv::sf::IFileSystem, string("Image_") + to_string(_0));
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::MountContentStorage(IN uint32_t contentStorageID, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::MountContentStorage");
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenContentStorageFileSystem(IN uint32_t contentStorageID, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenContentStorageFileSystem");
 	contentFs = buildInterface(nn::fssrv::sf::IFileSystem, string("CS_") + to_string(contentStorageID));
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxyForLoader::MountCode(IN nn::ApplicationId TID, IN int8_t * contentPath, guint contentPath_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxyForLoader::MountCode");
+uint32_t nn::fssrv::sf::IFileSystemProxyForLoader::OpenCodeFileSystem(IN nn::ApplicationId TID, IN uint8_t * contentPath, guint contentPath_size, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& contentFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxyForLoader::OpenCodeFileSystem");
 	contentFs = buildInterface(nn::fssrv::sf::IFileSystem, "");
 	return 0;
 }
@@ -302,20 +321,10 @@ nn::fssrv::sf::IDirectory::IDirectory(Ctu *_ctu, string  _fn, uint32_t  _filter)
 	}
 }
 
-struct DirectoryEntry {
-	char path[0x300];
-	uint32_t unk1;
-	uint8_t entry_type;
-	uint8_t pad[3];
-	uint64_t filesize;
-};
 
-static_assert(sizeof(DirectoryEntry) == 0x310);
-
-uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t * entries_buf, guint entries_buf_len) {
-	uint64_t entries_count = entries_buf_len / sizeof(DirectoryEntry);
+uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT nn::fssrv::sf::IDirectoryEntry * entries, guint entries_buf_len) {
+	uint64_t entries_count = entries_buf_len / sizeof(nn::fssrv::sf::IDirectoryEntry);
 	LOG_DEBUG(Fsp, "IDirectory::Read: Attempting to read " LONGFMT " entries (from " LONGFMT ")", entries_count, entries_buf_len);
-	struct DirectoryEntry *entries = (struct DirectoryEntry*)entries_buf;
 	struct dirent *curdir;
 	struct stat curdir_stat;
 	uint64_t i;
@@ -324,9 +333,9 @@ uint32_t nn::fssrv::sf::IDirectory::Read(OUT uint64_t& entries_read, OUT uint8_t
 		curdir = readdir((DIR*)fp);
 		if (curdir == nullptr)
 			break;
-		strcpy(entries[i].path, curdir->d_name);
+		strcpy((char*)entries[i].path, (char*)curdir->d_name);
 		entries[i].unk1 = 0;
-		entries[i].entry_type = curdir->d_type == DT_DIR ? 0 : 1;
+		entries[i].directory_entry_type = curdir->d_type == DT_DIR ? Directory : File;
 		if (stat((fn + std::string("/") + std::string(curdir->d_name)).c_str(), &curdir_stat) == -1) {
 			LOG_DEBUG(Fsp, "We got an error getting size of %s", curdir->d_name);
 			perror("stat");
@@ -374,7 +383,7 @@ uint32_t nn::fssrv::sf::IFile::GetSize(OUT uint64_t& fileSize) {
 	return 0;
 }
 
-uint32_t nn::fssrv::sf::IFile::Read(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, OUT uint64_t& out_size, OUT int8_t * out_buf, guint out_buf_size) {
+uint32_t nn::fssrv::sf::IFile::Read(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, OUT uint64_t& out_size, OUT uint8_t * out_buf, guint out_buf_size) {
 	LOG_DEBUG(Fsp, "IFile::Read from %s from " LONGFMT, fn.c_str(), offset);
 	if(isOpen && fp != nullptr) {
 		uint64_t s = ((uint64_t)out_buf_size < size ? (uint64_t)out_buf_size : size);
@@ -389,7 +398,7 @@ uint32_t nn::fssrv::sf::IFile::Read(IN uint32_t _0, IN uint64_t offset, IN uint6
 	return 0x0;
 }
 
-uint32_t nn::fssrv::sf::IFile::Write(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, IN int8_t * buf, guint buf_size) {
+uint32_t nn::fssrv::sf::IFile::Write(IN uint32_t _0, IN uint64_t offset, IN uint64_t size, IN uint8_t * buf, guint buf_size) {
 	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFile::Write");
 	if(isOpen && fp != nullptr) {
 		bufferOffset = offset;
@@ -433,7 +442,7 @@ uint32_t nn::fssrv::sf::IFile::SetSize(IN uint64_t size) {
 }
 
 // Funcs
-uint32_t nn::fssrv::sf::IFileSystem::OpenFile(IN uint32_t mode, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFile>& file) {
+uint32_t nn::fssrv::sf::IFileSystem::OpenFile(IN uint32_t mode, IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IFile>& file) {
 	LOG_DEBUG(Fsp, "OpenFile %s", path);
 	auto tempi = buildInterface(nn::fssrv::sf::IFile, fnPath + "/" + string((char*)path), mode);
 	if(tempi->isOpen) {
@@ -443,7 +452,7 @@ uint32_t nn::fssrv::sf::IFileSystem::OpenFile(IN uint32_t mode, IN int8_t * path
 		return 0x7d402;
 }
 
-uint32_t nn::fssrv::sf::IFileSystem::OpenDirectory(IN uint32_t filter, IN int8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IDirectory>& dir) {
+uint32_t nn::fssrv::sf::IFileSystem::OpenDirectory(IN uint32_t filter, IN uint8_t * path, guint path_size, OUT shared_ptr<nn::fssrv::sf::IDirectory>& dir) {
 	LOG_DEBUG(Fsp, "OpenDirectory %s", path);
 	auto tempi = buildInterface(nn::fssrv::sf::IDirectory, fnPath + "/" + string((char*)path), filter);
 	if(tempi->isOpen) {
@@ -453,9 +462,9 @@ uint32_t nn::fssrv::sf::IFileSystem::OpenDirectory(IN uint32_t filter, IN int8_t
 		return 0x7d402;
 }
 
-uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSaveDataThumbnailFile(IN uint8_t _0, IN uint8_t * _1, IN uint32_t _2, OUT shared_ptr<nn::fssrv::sf::IFile>& thumbnail) {
-	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenSaveDataThumbnailFile");
-	thumbnail = buildInterface(nn::fssrv::sf::IFile, string((char*)_1), _0);
+uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSaveDataMetaFile(IN uint8_t _0, IN uint32_t _1, IN uint8_t * _2, OUT shared_ptr<nn::fssrv::sf::IFileSystem>& imageFs) {
+	LOG_DEBUG(Fsp, "Stub implementation for nn::fssrv::sf::IFileSystemProxy::OpenSaveDataMetaFile");
+	imageFs = buildInterface(nn::fssrv::sf::IFileSystem, string((char*)_2));
 	return 0;
 }
 
@@ -463,8 +472,8 @@ uint32_t nn::fssrv::sf::IFileSystemProxy::OpenSaveDataThumbnailFile(IN uint8_t _
 /* ---------------------------------------- End of IFile ---------------------------------------- */
 
 
-uint32_t nn::fssrv::sf::IEventNotifier::Unknown0(OUT shared_ptr<KObject>& _0) {
-	LOG_DEBUG(IpcStubs, "Stub implementation for nn::fssrv::sf::IEventNotifier::Unknown0");
+uint32_t nn::fssrv::sf::IEventNotifier::GetEventHandle(OUT shared_ptr<KObject>& _0) {
+	LOG_DEBUG(IpcStubs, "Stub implementation for nn::fssrv::sf::IEventNotifier::GetEventHandle");
 	_0 = make_shared<Waitable>();
 	return 0;
 }
