@@ -78,7 +78,7 @@ void dumpstring(uint8_t *data, guint size) {
 	}
 }
 
-uint32_t nn::lm::ILogger::Log(IN uint8_t *message, guint messageSize) {
+uint32_t nn::lm::ILogger::Initialize(IN uint8_t *message, guint messageSize) {
 	auto packet = (InLogPacket *) message;
 	dumpstring(message, messageSize);
 

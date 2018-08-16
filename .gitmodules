@@ -1,3 +1,6 @@
 [submodule "unicorn"]
 	path = unicorn
 	url = https://github.com/reswitched/unicorn.git
+[submodule "SwIPC"]
+	path = SwIPC
+	url = https://github.com/reswitched/SwIPC.git

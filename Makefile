@@ -11,10 +11,10 @@ OBJ_FILES := $(CPP_FILES:.cpp=.o) $(IPCIMPL_FILES:.cpp=.o)
 
 all: ctu
 
-ipcdefs/auto.id: genallipc.py
-	$(PYTHON2) genallipc.py
+SwIPC/ipcdefs/auto.id: SwIPC/scripts/genallipc.py
+	cd SwIPC && $(PYTHON2) scripts/genallipc.py
 
-IpcStubs.h: $(ID_FILES) $(IPCIMPL_FILES) ipcdefs/auto.id generateIpcStubs.py idparser.py partialparser.py
+IpcStubs.h: $(ID_FILES) $(IPCIMPL_FILES) SwIPC/ipcdefs/auto.id generateIpcStubs.py SwIPC/idparser.py partialparser.py
 	$(PYTHON2) generateIpcStubs.py
 
 %.pch: % IpcStubs.h $(H_FILES)
