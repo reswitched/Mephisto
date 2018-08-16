@@ -141,18 +141,20 @@ guint Kip::load(Ctu &ctu, gptr base, bool relocate) {
 }
 
 typedef struct {
-	uint32_t magic, pad0, pad1, pad2;
+	uint32_t magic, pad0, pad1, flags;
 	uint32_t textOff, textLoc, textSize, pad3;
 	uint32_t rdataOff, rdataLoc, rdataSize, pad4;
 	uint32_t dataOff, dataLoc, dataSize;
 	uint32_t bssSize;
 } NsoHeader;
 
-char *decompress(ifstream &fp, uint32_t offset, uint32_t csize, uint32_t usize) {
+char *nso_read_and_decompress(ifstream &fp, uint32_t offset, uint32_t csize, uint32_t usize, bool need_decompression) {
 	fp.seekg(offset);
 	char *buf = new char[csize];
-	char *obuf = new char[usize];
 	fp.read(buf, csize);
+	if (!need_decompression)
+		return buf;
+	char *obuf = new char[usize];
 	assert(LZ4_decompress_safe(buf, obuf, csize, usize) == usize);
 	delete[] buf;
 	return obuf;
@@ -170,15 +172,18 @@ guint Nso::load(Ctu &ctu, gptr base, bool relocate) {
 
 	ctu.cpu.map(base, tsize);
 
-	char *text = decompress(fp, hdr.textOff, hdr.rdataOff - hdr.textOff, hdr.textSize);
+	bool is_text_compressed = ((hdr.flags >> 0) & 1) != 0;
+	char *text = nso_read_and_decompress(fp, hdr.textOff, hdr.rdataOff - hdr.textOff, hdr.textSize, is_text_compressed);
 	ctu.cpu.writemem(base + hdr.textLoc, text, hdr.textSize);
 	delete[] text;
 
-	char *rdata = decompress(fp, hdr.rdataOff, hdr.dataOff - hdr.rdataOff, hdr.rdataSize);
+	bool is_rdata_compressed = ((hdr.flags >> 1) & 1) != 0;
+	char *rdata = nso_read_and_decompress(fp, hdr.rdataOff, hdr.dataOff - hdr.rdataOff, hdr.rdataSize, is_rdata_compressed);
 	ctu.cpu.writemem(base + hdr.rdataLoc, rdata, hdr.rdataSize);
 	delete[] rdata;
 
-	char *data = decompress(fp, hdr.dataOff, length - hdr.dataOff, hdr.dataSize);
+	bool is_data_compressed = ((hdr.flags >> 2) & 1) != 0;
+	char *data = nso_read_and_decompress(fp, hdr.dataOff, length - hdr.dataOff, hdr.dataSize, is_data_compressed);
 	ctu.cpu.writemem(base + hdr.dataLoc, data, hdr.dataSize);
 	delete[] data;
 
