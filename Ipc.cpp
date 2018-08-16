@@ -174,9 +174,11 @@ uint32_t IpcService::messageSync(shared_ptr<array<uint8_t, 0x100>> buf, bool& cl
 			ret = 0x25a0b;
 			break;
 		case 4: // Normal
+		case 6: // Normal with Context
 			ret = target->dispatch(msg, resp);
 			break;
 		case 5: // Control
+		case 7: // Control with Context
 			switch(msg.cmdId) {
 			case 0: // ConvertSessionToDomain
 				LOG_DEBUG(Ipc, "ConvertSessionToDomain");
